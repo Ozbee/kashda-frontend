@@ -1,0 +1,336 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+:root {
+  --kashda-bg: #2a004a;
+  --kashda-sidebar: #1a003a;
+  --kashda-surface: #3a005f;
+  --kashda-border: #4a007a;
+  --kashda-purple: #6a0dad;
+  --kashda-purple-hover: #8a2dd3;
+  --kashda-gold: #d4af37;
+  --kashda-gold-hover: #e6c24d;
+  --kashda-text: #e0e0e0;
+  --kashda-muted: #a0a0a0;
+  --kashda-light: #ffffff;
+  --kashda-dark: #0a0a0a;
+  --kashda-text-light: #171717;
+  --kashda-text-dark: #ededed;
+  --background: #2a004a;
+  --foreground: #e0e0e0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* KASHDA Brand Components */
+.btn-kashda-primary {
+  @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200;
+  background-color: var(--kashda-purple);
+}
+
+.btn-kashda-primary:hover {
+  background-color: var(--kashda-purple-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(106, 10, 173, 0.3);
+}
+
+.btn-kashda-primary:active {
+  transform: translateY(0);
+}
+
+.btn-kashda-secondary {
+  @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-semibold transition-all duration-200;
+  background-color: var(--kashda-gold);
+  color: var(--kashda-text-light);
+}
+
+.btn-kashda-secondary:hover {
+  background-color: var(--kashda-gold-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+.btn-kashda-secondary:active {
+  transform: translateY(0);
+}
+
+.btn-kashda-outline {
+  @apply inline-flex items-center justify-center px-6 py-3 rounded-lg font-semibold border-2 transition-all duration-200;
+  border-color: var(--kashda-border);
+  color: var(--kashda-gold);
+  background: transparent;
+}
+
+.btn-kashda-outline:hover {
+  background-color: var(--kashda-surface);
+  border-color: var(--kashda-purple);
+  color: var(--kashda-gold);
+}
+
+.card-kashda {
+  @apply rounded-lg shadow-lg p-6 border;
+  border-color: var(--kashda-border);
+  background: var(--kashda-surface);
+  color: var(--kashda-text);
+}
+
+.card-kashda-gold {
+  @apply rounded-lg shadow-lg p-6 border-l-4;
+  border-left-color: var(--kashda-gold);
+  border-top: 1px solid var(--kashda-border);
+  border-right: 1px solid var(--kashda-border);
+  border-bottom: 1px solid var(--kashda-border);
+  background: var(--kashda-surface);
+  color: var(--kashda-text);
+}
+
+.input-kashda {
+  @apply w-full px-4 py-3 rounded-lg border-2 transition-all duration-200;
+  border-color: var(--kashda-border);
+  background: var(--kashda-bg);
+  color: var(--kashda-text);
+}
+
+.input-kashda:focus {
+  outline: none;
+  border-color: var(--kashda-purple);
+  box-shadow: 0 0 0 3px rgba(106, 10, 173, 0.25);
+}
+
+.input-kashda:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input-kashda::placeholder {
+  color: var(--kashda-muted);
+}
+
+.label-kashda {
+  @apply block text-sm font-semibold mb-2;
+  color: var(--kashda-text);
+}
+
+.text-kashda-purple {
+  color: var(--kashda-purple);
+}
+
+.text-kashda-gold {
+  color: var(--kashda-gold);
+}
+
+.text-kashda-muted {
+  color: var(--kashda-muted);
+}
+
+.bg-kashda-purple {
+  background-color: var(--kashda-purple);
+}
+
+.bg-kashda-gold {
+  background-color: var(--kashda-gold);
+}
+
+.bg-kashda-surface {
+  background-color: var(--kashda-surface);
+}
+
+.border-kashda-purple {
+  border-color: var(--kashda-purple);
+}
+
+.border-kashda-gold {
+  border-color: var(--kashda-gold);
+}
+
+.border-kashda-border {
+  border-color: var(--kashda-border);
+}
+
+/* Loading Animation */
+@keyframes skeleton-loading {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  animation: skeleton-loading 1.5s infinite;
+  background: linear-gradient(
+    90deg,
+    #3a005f 25%,
+    #5a0d8a 50%,
+    #3a005f 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Responsive Typography */
+@media (max-width: 640px) {
+  h1 {
+    @apply text-3xl;
+  }
+  h2 {
+    @apply text-2xl;
+  }
+  h3 {
+    @apply text-xl;
+  }
+}
+
+/* Form Styles */
+form {
+  @apply space-y-4;
+}
+
+.form-group {
+  @apply space-y-2;
+}
+
+.error-message {
+  @apply text-sm font-medium;
+  color: #fca5a5;
+}
+
+.success-message {
+  @apply text-sm font-medium;
+  color: #86efac;
+}
+
+.alert-error {
+  @apply p-3 rounded-lg border;
+  background-color: rgba(127, 29, 29, 0.3);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Toast Notifications */
+.toast-container {
+  @apply fixed bottom-4 right-4 z-50 space-y-2;
+}
+
+.toast {
+  @apply px-4 py-3 rounded-lg shadow-lg text-white font-medium;
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast-success {
+  background-color: #10b981;
+}
+
+.toast-error {
+  background-color: #ef4444;
+}
+
+.toast-info {
+  background-color: var(--kashda-purple);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive Container */
+.container-kashda {
+  @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Grid Layout */
+.grid-kashda {
+  @apply grid gap-6 md:grid-cols-2 lg:grid-cols-3;
+}
+
+/* Divider */
+.divider-kashda {
+  @apply border-t-2;
+  border-color: var(--kashda-border);
+}
+
+/* Badge */
+.badge-kashda {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold;
+  background-color: rgba(106, 10, 173, 0.3);
+  color: #c4b5fd;
+}
+
+.badge-kashda-gold {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold;
+  background-color: rgba(212, 175, 55, 0.2);
+  color: var(--kashda-gold);
+}
+
+.badge-kashda-error {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold;
+  background-color: rgba(127, 29, 29, 0.4);
+  color: #fca5a5;
+}
+
+/* Link Styles */
+a {
+  color: var(--kashda-gold);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: var(--kashda-gold-hover);
+}
+
+/* Code Block */
+code {
+  @apply px-2 py-1 rounded text-sm font-mono;
+  background-color: rgba(106, 10, 173, 0.2);
+  color: var(--kashda-gold);
+}
+
+pre {
+  @apply p-4 rounded-lg overflow-x-auto;
+  background-color: var(--kashda-surface);
+  color: var(--kashda-text);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--kashda-sidebar);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--kashda-purple);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--kashda-purple-hover);
+}

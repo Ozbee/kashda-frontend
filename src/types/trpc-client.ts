@@ -1,0 +1,80 @@
+/** Typed tRPC React hooks surface used by the frontend (matches kashda-backend routers). */
+
+type QueryHook<T> = {
+  useQuery: (
+    input?: unknown,
+    opts?: { enabled?: boolean; retry?: boolean | number; refetchOnWindowFocus?: boolean }
+  ) => {
+    data: T | undefined;
+    isLoading: boolean;
+    isError: boolean;
+    error: unknown;
+    refetch: () => Promise<unknown>;
+  };
+};
+
+type MutationHook<TInput, TOutput> = {
+  useMutation: (opts?: {
+    onSuccess?: () => void;
+  }) => {
+    mutateAsync: (input: TInput) => Promise<TOutput>;
+    isPending: boolean;
+  };
+};
+
+import type {
+  KashdaUser,
+  TaxBill,
+  BillHistoryItem,
+  UserProfile,
+  MomoNetwork,
+} from './api';
+
+export interface TrpcReact {
+  useUtils: () => {
+    auth: {
+      me: { invalidate: () => void };
+      getProfile: { invalidate: () => void };
+    };
+  };
+  auth: {
+    me: QueryHook<KashdaUser | null>;
+    register: MutationHook<
+      {
+        name: string;
+        phoneNumber: string;
+        email?: string;
+        addressType: string;
+        addressValue: string;
+        propertyCategoryId: number;
+      },
+      { success: boolean; phoneNumber: string; accountReference?: string }
+    >;
+    verifyOtp: MutationHook<
+      { phoneNumber: string; otpCode: string },
+      { success: boolean; user?: KashdaUser }
+    >;
+    logout: MutationHook<void, { success: boolean }>;
+    getProfile: QueryHook<UserProfile>;
+    updateProfile: MutationHook<
+      { name?: string; email?: string },
+      { success: boolean; message?: string }
+    >;
+  };
+  billing: {
+    getCurrentBill: QueryHook<TaxBill | null>;
+    getBillHistory: QueryHook<BillHistoryItem[]>;
+    getBillDetails: QueryHook<TaxBill>;
+  };
+  payment: {
+    initiateMobileMoneyPayment: MutationHook<
+      { billId: number; momoNumber: string; momoNetwork: MomoNetwork },
+      { success: boolean; paymentReference: string; message?: string }
+    >;
+    verifyPaymentStatus: QueryHook<{
+      status: string;
+      amount?: number;
+      reference?: string;
+    }>;
+  };
+}
