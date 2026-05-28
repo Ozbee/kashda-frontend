@@ -18,28 +18,8 @@ import BillOverviewCard from '@/components/dashboard/BillOverviewCard';
 import PaymentHistoryTable from '@/components/dashboard/PaymentHistoryTable';
 import { useAuth } from '@/contexts/AuthContext';
 import { trpc } from '@/lib/trpc';
-import { formatBillMonth, toNumber } from '@/lib/format';
-import { isDevAuthEnabled } from '@/lib/env';
-
-const DEV_BILL = {
-  id: 1,
-  baseAmount: 150,
-  arrears: 50,
-  totalDue: 200,
-  dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-  status: 'pending' as const,
-  payments: [
-    {
-      id: '1',
-      date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      amount: 150,
-      reference: 'KSD-GHA-PAY-001',
-      status: 'completed' as const,
-      method: 'mobile_money' as const,
-      billMonth: 'April 2026',
-    },
-  ],
-};
+import { toNumber } from '@/lib/format';
+import { mapApiPaymentsToRows } from '@/lib/payments';
 
 const quickActions = [
   { label: 'View All Bills', href: '/dashboard/bills', icon: ReceiptLongIcon },
@@ -55,61 +35,22 @@ export default function DashboardPage() {
     retry: false,
   });
 
-  const bill =
-    billQuery.data ??
-    (isDevAuthEnabled() || billQuery.isError ? DEV_BILL : null);
+  const paymentsQuery = trpc.billing.getPaymentHistory.useQuery(
+    { limit: 20 },
+    { retry: false }
+  );
 
-  const payments = (() => {
-    if (!bill?.payments?.length) return DEV_BILL.payments;
-    return bill.payments.map((p) => {
-      const apiPayment = p as {
-        id: number;
-        amount: string | number;
-        status: string;
-        paymentReference?: string | null;
-        createdAt?: Date;
-        date?: string;
-        reference?: string;
-        method?: string;
-        billMonth?: string;
-      };
-      if ('date' in apiPayment && apiPayment.date) {
-        return {
-          ...apiPayment,
-          id: String(apiPayment.id),
-          date: apiPayment.date,
-          amount: toNumber(apiPayment.amount),
-          reference: apiPayment.reference ?? `PAY-${apiPayment.id}`,
-          status: (apiPayment.status === 'completed' ? 'completed' : apiPayment.status === 'failed' ? 'failed' : 'pending') as 'completed' | 'failed' | 'pending',
-          method: 'mobile_money' as const,
-          billMonth: apiPayment.billMonth ?? 'Current',
-        };
-      }
-      const billingMonth =
-        bill && 'billingMonth' in bill ? bill.billingMonth : null;
-      return {
-        id: String(apiPayment.id),
-        date: new Date(apiPayment.createdAt ?? Date.now()).toISOString(),
-        amount: toNumber(apiPayment.amount),
-        reference: apiPayment.paymentReference ?? `PAY-${apiPayment.id}`,
-        status:
-          apiPayment.status === 'success' || apiPayment.status === 'completed'
-            ? ('completed' as const)
-            : apiPayment.status === 'failed'
-              ? ('failed' as const)
-              : ('pending' as const),
-        method: 'mobile_money' as const,
-        billMonth:
-          billingMonth != null ? formatBillMonth(billingMonth) : 'Current',
-      };
-    });
-  })();
+  const bill = billQuery.data ?? null;
+  const payments = mapApiPaymentsToRows(paymentsQuery.data ?? []);
 
-  const totalPaid = payments
-    .filter((p) => p.status === 'completed')
-    .reduce((sum, p) => sum + p.amount, 0);
+  const completedPayments = payments.filter((p) => p.status === 'completed');
+  const totalPaid = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+  const lastPaymentDate = completedPayments[0]?.date;
 
-  if (billQuery.isLoading && !bill) {
+  const isLoading =
+    (billQuery.isLoading || paymentsQuery.isLoading) && !billQuery.data && !paymentsQuery.data;
+
+  if (isLoading) {
     return (
       <DashboardLayout activeTab="overview">
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
@@ -126,8 +67,8 @@ export default function DashboardPage() {
       <QuickStats
         totalPaid={totalPaid}
         totalDue={bill ? toNumber(bill.totalDue) : 0}
-        lastPaymentDate={payments[0]?.date}
-        accountReference={user?.accountReference ?? 'KSD-GHA-XXXXX'}
+        lastPaymentDate={lastPaymentDate}
+        accountReference={user?.accountReference ?? '—'}
       />
 
       {bill && (

@@ -16,8 +16,6 @@ import KashdaLogo from '@/components/common/KashdaLogo';
 import AuthShell from '@/components/auth/AuthShell';
 import { trpc } from '@/lib/trpc';
 import { PROPERTY_CATEGORY_IDS } from '@/types/api';
-import { isDevAuthEnabled } from '@/lib/env';
-
 interface RegisterFormData {
   name: string;
   phone: string;
@@ -88,23 +86,24 @@ export default function RegisterForm() {
           PROPERTY_CATEGORY_IDS[formData.propertyCategory] ?? 1,
       });
 
+      const phoneE164 = result.phoneNumber ?? formData.phone.replace(/\s/g, '');
       sessionStorage.setItem(
         'registration_data',
         JSON.stringify({
           ...formData,
-          phone: result.phoneNumber ?? formData.phone,
+          phone: phoneE164,
           accountReference: result.accountReference,
         })
       );
+      if ('developmentOtp' in result && result.developmentOtp) {
+        sessionStorage.setItem('development_otp', String(result.developmentOtp));
+      } else {
+        sessionStorage.removeItem('development_otp');
+      }
+      sessionStorage.setItem('login_phone', phoneE164);
       sessionStorage.setItem('auth_flow', 'register');
       router.push('/verify-otp');
     } catch (err) {
-      if (isDevAuthEnabled()) {
-        sessionStorage.setItem('registration_data', JSON.stringify(formData));
-        sessionStorage.setItem('auth_flow', 'register');
-        router.push('/verify-otp');
-        return;
-      }
       setError(
         err instanceof Error ? err.message : 'Registration failed. Please try again.'
       );

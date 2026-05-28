@@ -2,54 +2,35 @@
 
 import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader';
 import PaymentHistoryTable from '@/components/dashboard/PaymentHistoryTable';
 import { trpc } from '@/lib/trpc';
-import { formatBillMonth, formatGhs, toNumber } from '@/lib/format';
-import { isDevAuthEnabled } from '@/lib/env';
-
-const DEV_PAYMENTS = [
-  {
-    id: '1',
-    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    amount: 150,
-    reference: 'KSD-GHA-PAY-001',
-    status: 'completed' as const,
-    method: 'mobile_money' as const,
-    billMonth: 'May 2026',
-  },
-];
+import { formatGhs } from '@/lib/format';
+import { mapApiPaymentsToRows } from '@/lib/payments';
 
 export default function PaymentsPage() {
   const router = useRouter();
-  const billQuery = trpc.billing.getCurrentBill.useQuery();
+  const paymentsQuery = trpc.billing.getPaymentHistory.useQuery({ limit: 50 });
 
-  const payments =
-    billQuery.data?.payments?.map((p) => ({
-      id: String(p.id),
-      date: new Date(p.createdAt).toISOString(),
-      amount: toNumber(p.amount),
-      reference: p.paymentReference ?? `PAY-${p.id}`,
-      status:
-        p.status === 'success' || p.status === 'completed'
-          ? ('completed' as const)
-          : p.status === 'failed'
-            ? ('failed' as const)
-            : ('pending' as const),
-      method: 'mobile_money' as const,
-      billMonth: billQuery.data?.billingMonth
-        ? formatBillMonth(billQuery.data.billingMonth)
-        : '—',
-    })) ?? (isDevAuthEnabled() || billQuery.isError ? DEV_PAYMENTS : []);
+  const payments = mapApiPaymentsToRows(paymentsQuery.data ?? []);
+  const completed = payments.filter((p) => p.status === 'completed');
+  const totalPaid = completed.reduce((sum, p) => sum + p.amount, 0);
 
-  const totalPaid = payments
-    .filter((p) => p.status === 'completed')
-    .reduce((sum, p) => sum + p.amount, 0);
+  if (paymentsQuery.isLoading) {
+    return (
+      <DashboardLayout activeTab="payments">
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>
+          <CircularProgress color="secondary" />
+        </Box>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout activeTab="payments">
@@ -78,7 +59,7 @@ export default function PaymentsPage() {
                 Payments Made
               </Typography>
               <Typography variant="h4" color="success.main" sx={{ fontWeight: 700 }}>
-                {payments.filter((p) => p.status === 'completed').length}
+                {completed.length}
               </Typography>
             </CardContent>
           </Card>

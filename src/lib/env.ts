@@ -1,5 +1,12 @@
 ﻿export function getBackendUrl(): string {
-  return process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3000/api/trpc';
+  const configured = process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (configured?.startsWith('/')) {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}${configured}`;
+    }
+    return `http://localhost:3001${configured}`;
+  }
+  return configured ?? 'http://localhost:3000/api/trpc';
 }
 
 export function isDevAuthEnabled(): boolean {

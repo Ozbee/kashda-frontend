@@ -2,36 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader';
 import BillsList from '@/components/dashboard/BillsList';
 import { trpc } from '@/lib/trpc';
 import { formatBillMonth, toNumber } from '@/lib/format';
-import { isDevAuthEnabled } from '@/lib/env';
-
-const DEV_BILLS = [
-  {
-    id: '1',
-    month: 'May 2026',
-    baseAmount: 150,
-    arrears: 50,
-    totalDue: 200,
-    dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'pending' as const,
-  },
-  {
-    id: '2',
-    month: 'April 2026',
-    baseAmount: 150,
-    arrears: 0,
-    totalDue: 150,
-    dueDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'paid' as const,
-    paidAmount: 150,
-  },
-];
 
 export default function BillsPage() {
   const router = useRouter();
@@ -54,12 +30,10 @@ export default function BillsPage() {
           : b.status === 'partial'
             ? ('partial' as const)
             : ('pending' as const),
-      paidAmount:
-        b.status === 'paid' ? toNumber(b.totalDue) : undefined,
-    })) ??
-    (isDevAuthEnabled() || historyQuery.isError ? DEV_BILLS : []);
+      paidAmount: b.status === 'paid' ? toNumber(b.totalDue) : undefined,
+    })) ?? [];
 
-  if (historyQuery.isLoading && bills.length === 0) {
+  if (historyQuery.isLoading) {
     return (
       <DashboardLayout activeTab="bills">
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh' }}>

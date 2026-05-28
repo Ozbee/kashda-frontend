@@ -27,7 +27,7 @@ export default function QuickStats({
     new Intl.NumberFormat('en-GH', { style: 'currency', currency: 'GHS' }).format(amount);
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'No payment yet';
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-GH', {
       year: 'numeric',
       month: 'short',

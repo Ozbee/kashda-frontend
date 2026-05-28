@@ -21,6 +21,8 @@ export interface AuthContextType {
   refetchUser: () => void;
   logout: () => Promise<void>;
   setDevUser: (user: User | null) => void;
+  /** Apply user returned from verifyOtp without waiting for auth.me */
+  applyVerifiedUser: (user: User) => void;
 }
 
 const DEV_USER_KEY = 'kashda_dev_user';
@@ -29,6 +31,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [devUser, setDevUserState] = useState<User | null>(null);
+  /** Holds user from verifyOtp until auth.me confirms the session cookie */
+  const [sessionUser, setSessionUser] = useState<User | null>(null);
   const [devHydrated, setDevHydrated] = useState(false);
   const utils = trpc.useUtils();
 
@@ -53,20 +57,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const applyVerifiedUser = useCallback(
+    (verified: User) => {
+      setSessionUser(verified);
+      if (isDevAuthEnabled()) {
+        setDevUser(verified);
+      } else {
+        utils.auth.me.setData(verified);
+      }
+    },
+    [setDevUser, utils.auth.me]
+  );
+
   const useApi = !isDevAuthEnabled() || !devUser;
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     enabled: useApi && devHydrated,
-    retry: false,
-    refetchOnWindowFocus: true,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   const logoutMutation = trpc.auth.logout.useMutation();
 
   const apiUser = meQuery.data as User | null | undefined;
-  const user = isDevAuthEnabled() && devUser ? devUser : apiUser ?? null;
+
+  useEffect(() => {
+    if (apiUser) {
+      setSessionUser(apiUser);
+    }
+  }, [apiUser]);
+
+  const user =
+    isDevAuthEnabled() && devUser ? devUser : sessionUser ?? apiUser ?? null;
 
   const logout = useCallback(async () => {
+    setSessionUser(null);
     setDevUser(null);
     try {
       if (!isDevAuthEnabled()) {
@@ -79,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [setDevUser, logoutMutation, utils.auth.me]);
 
   const isLoading =
-    !devHydrated || (useApi && meQuery.isLoading && !user);
+    !devHydrated || (useApi && meQuery.isLoading && !sessionUser && !apiUser);
 
   const value = useMemo<AuthContextType>(
     () => ({
@@ -89,8 +114,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refetchUser: () => void meQuery.refetch(),
       logout,
       setDevUser,
+      applyVerifiedUser,
     }),
-    [user, isLoading, meQuery.refetch, logout, setDevUser]
+    [user, isLoading, meQuery.refetch, logout, setDevUser, applyVerifiedUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

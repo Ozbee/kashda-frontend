@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Box from '@mui/material/Box';
@@ -19,28 +19,35 @@ import { buildDevUser, shouldUseDevFallback } from '@/lib/dev-auth';
 import { isDevAuthEnabled } from '@/lib/env';
 
 const MAX_RESEND_ATTEMPTS = 3;
+const REDIRECT_DELAY_MS = 2000;
 
 export default function OTPVerification() {
   const router = useRouter();
-  const { setDevUser, refetchUser } = useAuth();
+  const { setDevUser, applyVerifiedUser } = useAuth();
+  const utils = trpc.useUtils();
   const verifyMutation = trpc.auth.verifyOtp.useMutation();
-  const registerMutation = trpc.auth.register.useMutation();
+  const requestOtpMutation = trpc.auth.requestOtp.useMutation();
+  const verifyInFlight = useRef(false);
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
   const [resendAttempts, setResendAttempts] = useState(0);
   const [phone, setPhone] = useState('');
   const [registrationData, setRegistrationData] = useState<Record<string, string> | null>(null);
+  const [developmentOtp, setDevelopmentOtp] = useState<string | null>(null);
 
   useEffect(() => {
     const regRaw = sessionStorage.getItem('registration_data');
     const loginPhone = sessionStorage.getItem('login_phone');
+    const devOtp = sessionStorage.getItem('development_otp');
+    if (devOtp) setDevelopmentOtp(devOtp);
     if (regRaw) {
       const parsed = JSON.parse(regRaw) as Record<string, string>;
       setRegistrationData(parsed);
-      setPhone(parsed.phone ?? '');
+      setPhone(parsed.phone ?? loginPhone ?? '');
     } else if (loginPhone) {
       setPhone(loginPhone);
     } else {
@@ -54,6 +61,18 @@ export default function OTPVerification() {
       return () => clearTimeout(timer);
     }
   }, [resendCountdown]);
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = setTimeout(() => {
+      router.replace('/dashboard');
+    }, REDIRECT_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [successMessage, router]);
+
+  const handleGoToDashboard = () => {
+    router.replace('/dashboard');
+  };
 
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -75,40 +94,71 @@ export default function OTPVerification() {
     }
   };
 
+  const clearAuthSessionStorage = () => {
+    sessionStorage.removeItem('registration_data');
+    sessionStorage.removeItem('login_phone');
+    sessionStorage.removeItem('auth_flow');
+    sessionStorage.removeItem('development_otp');
+  };
+
   const completeAuth = async (otpCode: string) => {
+    if (verifyInFlight.current) return;
+    verifyInFlight.current = true;
+
     const phoneNumber = phone.replace(/\s/g, '');
 
     try {
-      await verifyMutation.mutateAsync({ phoneNumber, otpCode });
-      sessionStorage.removeItem('registration_data');
-      sessionStorage.removeItem('login_phone');
-      sessionStorage.removeItem('auth_flow');
-      await refetchUser();
-      router.push('/dashboard');
+      const result = await verifyMutation.mutateAsync({ phoneNumber, otpCode });
+      if (!result.user) {
+        throw new Error('Verification succeeded but user data was missing. Please try again.');
+      }
+
+      applyVerifiedUser(result.user);
+
+      const meResult = await utils.auth.me.fetch();
+      if (!meResult.data) {
+        throw new Error(
+          'Your account was verified but the session could not be saved. ' +
+            'Ensure the frontend uses /api/trpc (proxied to the backend) and restart both servers.'
+        );
+      }
+
+      await Promise.all([
+        utils.billing.getCurrentBill.invalidate(),
+        utils.billing.getPaymentHistory.invalidate(),
+        utils.billing.getBillHistory.invalidate(),
+      ]);
+
+      clearAuthSessionStorage();
+      setSuccessMessage(
+        result.message ?? 'Account verified successfully. Redirecting to your dashboard…'
+      );
+      setOtp(['', '', '', '', '', '']);
     } catch (err) {
       if (shouldUseDevFallback(err)) {
         const name = registrationData?.name ?? 'KASHDA User';
         const email = registrationData?.email;
-        setDevUser(
-          buildDevUser({
-            name,
-            phone: phoneNumber,
-            email,
-            accountReference: registrationData?.accountReference,
-          })
-        );
-        sessionStorage.removeItem('registration_data');
-        sessionStorage.removeItem('login_phone');
-        sessionStorage.removeItem('auth_flow');
-        router.push('/dashboard');
+        const devUser = buildDevUser({
+          name,
+          phone: phoneNumber,
+          email,
+          accountReference: registrationData?.accountReference,
+        });
+        setDevUser(devUser);
+        clearAuthSessionStorage();
+        setSuccessMessage('Account verified (dev mode). Redirecting…');
         return;
       }
       throw err;
+    } finally {
+      verifyInFlight.current = false;
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (successMessage) return;
+
     const otpCode = otp.join('');
     if (otpCode.length !== 6) {
       setError('Please enter a valid 6-digit OTP');
@@ -116,6 +166,7 @@ export default function OTPVerification() {
     }
 
     setLoading(true);
+    setError('');
     try {
       await completeAuth(otpCode);
     } catch (err) {
@@ -130,26 +181,25 @@ export default function OTPVerification() {
   };
 
   const handleResend = async () => {
-    if (resendCountdown > 0 || resendAttempts >= MAX_RESEND_ATTEMPTS) return;
+    if (resendCountdown > 0 || resendAttempts >= MAX_RESEND_ATTEMPTS || successMessage) return;
 
     setLoading(true);
     setResendCountdown(60);
     setResendAttempts((prev) => prev + 1);
 
     try {
-      if (registrationData && !isDevAuthEnabled()) {
-        const addressType =
-          registrationData.addressType === 'manual'
-            ? 'ghana_post'
-            : registrationData.addressType;
-        await registerMutation.mutateAsync({
-          name: registrationData.name,
+      if (!isDevAuthEnabled()) {
+        const result = await requestOtpMutation.mutateAsync({
           phoneNumber: phone.replace(/\s/g, ''),
-          email: registrationData.email || undefined,
-          addressType: addressType as 'ghana_post' | 'gps',
-          addressValue: registrationData.addressValue,
-          propertyCategoryId: 1,
         });
+        if ('developmentOtp' in result && result.developmentOtp) {
+          const code = String(result.developmentOtp);
+          sessionStorage.setItem('development_otp', code);
+          setDevelopmentOtp(code);
+        } else {
+          sessionStorage.removeItem('development_otp');
+          setDevelopmentOtp(null);
+        }
       }
       setError('');
     } catch {
@@ -169,72 +219,106 @@ export default function OTPVerification() {
       </Box>
 
       <Card sx={{ boxShadow: 6 }}>
-          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-            <Typography variant="h4" color="secondary.main" sx={{ fontWeight: 700 }} gutterBottom>
-              Verify Your Phone
-            </Typography>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+          <Typography variant="h4" color="secondary.main" sx={{ fontWeight: 700 }} gutterBottom>
+            Verify Your Phone
+          </Typography>
             <Typography color="text.secondary" sx={{ mb: 3 }}>
-              We sent a 6-digit code to{' '}
-              <Box component="span" sx={{ fontWeight: 600 }} color="text.primary">
-                {phone || 'your phone'}
-              </Box>
+              {developmentOtp
+                ? 'SMS could not be delivered. Use the development code below to continue.'
+                : (
+                  <>
+                    We sent a 6-digit code to{' '}
+                    <Box component="span" sx={{ fontWeight: 600 }} color="text.primary">
+                      {phone || 'your phone'}
+                    </Box>
+                  </>
+                )}
             </Typography>
 
             <Box component="form" onSubmit={handleSubmit}>
               <Stack spacing={3}>
-                {error && <Alert severity="error">{error}</Alert>}
+                {developmentOtp && !successMessage && (
+                  <Alert severity="warning">
+                    Development OTP (not sent by SMS):{' '}
+                    <Box component="span" sx={{ fontWeight: 700, letterSpacing: 2 }}>
+                      {developmentOtp}
+                    </Box>
+                  </Alert>
+                )}
+                {successMessage && (
+                  <>
+                    <Alert severity="success">{successMessage}</Alert>
+                    <Button variant="contained" fullWidth onClick={handleGoToDashboard}>
+                      Continue to Dashboard
+                    </Button>
+                  </>
+                )}
+              {error && <Alert severity="error">{error}</Alert>}
 
-                <Stack direction="row" spacing={1} sx={{ justifyContent: 'center' }}>
-                  {otp.map((digit, index) => (
-                    <TextField
-                      key={index}
-                      id={`otp-${index}`}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(index, e)}
-                      slotProps={{
-                        htmlInput: {
-                          maxLength: 1,
-                          inputMode: 'numeric',
-                          style: { textAlign: 'center', fontSize: '1.5rem', fontWeight: 700, padding: '12px 0' },
-                        },
-                      }}
-                      sx={{ width: 48 }}
-                      autoFocus={index === 0}
-                    />
-                  ))}
-                </Stack>
+              {!successMessage && (
+                <>
+                  <Stack direction="row" spacing={1} sx={{ justifyContent: 'center' }}>
+                    {otp.map((digit, index) => (
+                      <TextField
+                        key={index}
+                        id={`otp-${index}`}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(index, e)}
+                        slotProps={{
+                          htmlInput: {
+                            maxLength: 1,
+                            inputMode: 'numeric',
+                            style: {
+                              textAlign: 'center',
+                              fontSize: '1.5rem',
+                              fontWeight: 700,
+                              padding: '12px 0',
+                            },
+                          },
+                        }}
+                        sx={{ width: 48 }}
+                        autoFocus={index === 0}
+                      />
+                    ))}
+                  </Stack>
 
-                <Button
-                  type="submit"
-                  variant="contained"
-                  fullWidth
-                  disabled={loading || otp.join('').length !== 6}
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    disabled={loading || otp.join('').length !== 6}
+                  >
+                    {loading ? 'Verifying...' : 'Verify OTP'}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="contained"
+                    color="secondary"
+                    fullWidth
+                    disabled={resendCountdown > 0 || loading}
+                    onClick={handleResend}
+                  >
+                    {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : 'Resend OTP'}
+                  </Button>
+                </>
+              )}
+
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                Wrong number?{' '}
+                <Link
+                  href="/register"
+                  style={{ color: '#d4af37', fontWeight: 600, textDecoration: 'none' }}
                 >
-                  {loading ? 'Verifying...' : 'Verify OTP'}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="contained"
-                  color="secondary"
-                  fullWidth
-                  disabled={resendCountdown > 0 || loading}
-                  onClick={handleResend}
-                >
-                  {resendCountdown > 0 ? `Resend in ${resendCountdown}s` : 'Resend OTP'}
-                </Button>
-
-                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-                  Wrong number?{' '}
-                  <Link href="/register" style={{ color: '#d4af37', fontWeight: 600, textDecoration: 'none' }}>
-                    Go back
-                  </Link>
-                </Typography>
-              </Stack>
-            </Box>
-          </CardContent>
-        </Card>
+                  Go back
+                </Link>
+              </Typography>
+            </Stack>
+          </Box>
+        </CardContent>
+      </Card>
     </AuthShell>
   );
 }

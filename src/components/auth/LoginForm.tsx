@@ -14,9 +14,11 @@ import Stack from '@mui/material/Stack';
 import KashdaLogo from '@/components/common/KashdaLogo';
 import AuthShell from '@/components/auth/AuthShell';
 import { isDevAuthEnabled } from '@/lib/env';
+import { trpc } from '@/lib/trpc';
 
 export default function LoginForm() {
   const router = useRouter();
+  const requestOtpMutation = trpc.auth.requestOtp.useMutation();
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,11 +38,22 @@ export default function LoginForm() {
     setLoading(true);
     try {
       const normalized = phone.replace(/\s/g, '');
+      if (!isDevAuthEnabled()) {
+        const result = await requestOtpMutation.mutateAsync({ phoneNumber: normalized });
+        if ('developmentOtp' in result && result.developmentOtp) {
+          sessionStorage.setItem('development_otp', String(result.developmentOtp));
+        } else {
+          sessionStorage.removeItem('development_otp');
+        }
+      }
+      sessionStorage.removeItem('registration_data');
       sessionStorage.setItem('login_phone', normalized);
       sessionStorage.setItem('auth_flow', 'login');
       router.push('/verify-otp');
     } catch (err) {
-      setError('Login failed. Please try again.');
+      setError(
+        err instanceof Error ? err.message : 'Login failed. Please try again.'
+      );
       console.error(err);
     } finally {
       setLoading(false);

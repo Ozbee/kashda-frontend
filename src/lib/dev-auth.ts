@@ -19,6 +19,6 @@ export function buildDevUser(params: {
   };
 }
 
-export function shouldUseDevFallback(_error?: unknown): boolean {
-  return isDevAuthEnabled();
+export function shouldUseDevFallback(error?: unknown): boolean {
+  return isDevAuthEnabled() && error != null;
 }

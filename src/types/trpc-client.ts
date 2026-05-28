@@ -50,9 +50,13 @@ export interface TrpcReact {
       },
       { success: boolean; phoneNumber: string; accountReference?: string }
     >;
+    requestOtp: MutationHook<
+      { phoneNumber: string },
+      { success: boolean; phoneNumber: string; message?: string }
+    >;
     verifyOtp: MutationHook<
       { phoneNumber: string; otpCode: string },
-      { success: boolean; user?: KashdaUser }
+      { success: boolean; user?: KashdaUser; message?: string }
     >;
     logout: MutationHook<void, { success: boolean }>;
     getProfile: QueryHook<UserProfile>;
@@ -65,6 +69,17 @@ export interface TrpcReact {
     getCurrentBill: QueryHook<TaxBill | null>;
     getBillHistory: QueryHook<BillHistoryItem[]>;
     getBillDetails: QueryHook<TaxBill>;
+    getPaymentHistory: QueryHook<
+      {
+        id: number;
+        billId: number;
+        amount: string | number;
+        status: string;
+        paymentReference?: string | null;
+        createdAt: Date;
+        billingMonth: string | Date;
+      }[]
+    >;
   };
   payment: {
     initiateMobileMoneyPayment: MutationHook<
