@@ -22,6 +22,12 @@ type MutationHook<TInput, TOutput> = {
   };
 };
 
+type QueryUtils<T> = {
+  invalidate: () => void;
+  fetch: () => Promise<T>;
+  setData: (data: T) => void;
+};
+
 import type {
   KashdaUser,
   TaxBill,
@@ -33,8 +39,13 @@ import type {
 export interface TrpcReact {
   useUtils: () => {
     auth: {
-      me: { invalidate: () => void };
+      me: QueryUtils<KashdaUser | null>;
       getProfile: { invalidate: () => void };
+    };
+    billing: {
+      getCurrentBill: { invalidate: () => void };
+      getPaymentHistory: { invalidate: () => void };
+      getBillHistory: { invalidate: () => void };
     };
   };
   auth: {

@@ -115,8 +115,8 @@ export default function OTPVerification() {
 
       applyVerifiedUser(result.user);
 
-      const meResult = await utils.auth.me.fetch();
-      if (!meResult.data) {
+      const meUser = await utils.auth.me.fetch();
+      if (!meUser) {
         throw new Error(
           'Your account was verified but the session could not be saved. ' +
             'Ensure the frontend uses /api/trpc (proxied to the backend) and restart both servers.'
