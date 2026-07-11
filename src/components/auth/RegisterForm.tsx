@@ -18,6 +18,7 @@ import LocationPicker, {
   type SelectedLocation,
 } from "@/components/location/LocationPicker";
 import { trpc } from "@/lib/trpc";
+import { storeAuthFlow } from "@/lib/auth-session";
 import { PROPERTY_CATEGORY_IDS } from "@/types/api";
 interface RegisterFormData {
   name: string;
@@ -113,7 +114,7 @@ export default function RegisterForm() {
         sessionStorage.removeItem("development_otp");
       }
       sessionStorage.setItem("login_phone", phoneE164);
-      sessionStorage.setItem("auth_flow", "register");
+      storeAuthFlow("register");
       router.push("/verify-otp");
     } catch (err) {
       setError(

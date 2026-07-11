@@ -12,11 +12,26 @@
  * intentionally want to bypass the proxy (cross-origin cookies must then be
  * supported end-to-end).
  */
+/** True when tRPC bypasses the same-origin /api proxy (breaks session cookies). */
+export function isCrossOriginBackendUrl(url?: string): boolean {
+  const target = url ?? process.env.NEXT_PUBLIC_BACKEND_URL?.trim() ?? '';
+  return /^https?:\/\//i.test(target);
+}
+
 export function getBackendUrl(): string {
   const configured = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
   const target = configured && configured.length > 0 ? configured : '/api/trpc';
 
   if (/^https?:\/\//i.test(target)) {
+    if (
+      typeof window !== 'undefined' &&
+      process.env.NODE_ENV !== 'production'
+    ) {
+      console.warn(
+        '[KASHDA] NEXT_PUBLIC_BACKEND_URL is cross-origin. Session cookies will not persist ' +
+          'on the frontend host — use /api/trpc with BACKEND_ORIGIN instead.'
+      );
+    }
     return target;
   }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { getBackendUrl, isDevAuthEnabled } from './env';
+import { getBackendUrl, isDevAuthEnabled, isCrossOriginBackendUrl } from './env';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -19,6 +19,16 @@ describe('getBackendUrl', () => {
   it('normalizes a relative path against the current origin', () => {
     vi.stubEnv('NEXT_PUBLIC_BACKEND_URL', 'custom/trpc');
     expect(getBackendUrl()).toMatch(/\/custom\/trpc$/);
+  });
+});
+
+describe('isCrossOriginBackendUrl', () => {
+  it('detects absolute http(s) backend URLs', () => {
+    expect(isCrossOriginBackendUrl('https://kashda-api.onrender.com/api/trpc')).toBe(
+      true
+    );
+    expect(isCrossOriginBackendUrl('/api/trpc')).toBe(false);
+    expect(isCrossOriginBackendUrl('')).toBe(false);
   });
 });
 

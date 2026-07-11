@@ -17,9 +17,13 @@ import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildDevUser, shouldUseDevFallback } from '@/lib/dev-auth';
 import { isDevAuthEnabled } from '@/lib/env';
+import {
+  clearAuthSessionStorage,
+  getPostAuthRedirect,
+  shouldRedirectOtpPageToLogin,
+} from '@/lib/auth-session';
 
 const MAX_RESEND_ATTEMPTS = 3;
-const REDIRECT_DELAY_MS = 2000;
 
 export default function OTPVerification() {
   const router = useRouter();
@@ -28,6 +32,7 @@ export default function OTPVerification() {
   const verifyMutation = trpc.auth.verifyOtp.useMutation();
   const requestOtpMutation = trpc.auth.requestOtp.useMutation();
   const verifyInFlight = useRef(false);
+  const verificationCompleteRef = useRef(false);
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
@@ -40,9 +45,23 @@ export default function OTPVerification() {
   const [developmentOtp, setDevelopmentOtp] = useState<string | null>(null);
 
   useEffect(() => {
+    if (verificationCompleteRef.current || successMessage) return;
+
     const regRaw = sessionStorage.getItem('registration_data');
     const loginPhone = sessionStorage.getItem('login_phone');
     const devOtp = sessionStorage.getItem('development_otp');
+
+    if (
+      shouldRedirectOtpPageToLogin({
+        hasRegistrationData: !!regRaw,
+        hasLoginPhone: !!loginPhone,
+        verificationComplete: verificationCompleteRef.current,
+      })
+    ) {
+      router.replace('/login');
+      return;
+    }
+
     if (devOtp) setDevelopmentOtp(devOtp);
     if (regRaw) {
       const parsed = JSON.parse(regRaw) as Record<string, string>;
@@ -50,10 +69,8 @@ export default function OTPVerification() {
       setPhone(parsed.phone ?? loginPhone ?? '');
     } else if (loginPhone) {
       setPhone(loginPhone);
-    } else {
-      router.replace('/login');
     }
-  }, [router]);
+  }, [router, successMessage]);
 
   useEffect(() => {
     if (resendCountdown > 0) {
@@ -62,16 +79,13 @@ export default function OTPVerification() {
     }
   }, [resendCountdown]);
 
-  useEffect(() => {
-    if (!successMessage) return;
-    const timer = setTimeout(() => {
-      router.replace('/dashboard');
-    }, REDIRECT_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [successMessage, router]);
+  const navigateAfterAuth = () => {
+    const target = getPostAuthRedirect();
+    router.replace(target);
+  };
 
   const handleGoToDashboard = () => {
-    router.replace('/dashboard');
+    navigateAfterAuth();
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -92,13 +106,6 @@ export default function OTPVerification() {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       document.getElementById(`otp-${index - 1}`)?.focus();
     }
-  };
-
-  const clearAuthSessionStorage = () => {
-    sessionStorage.removeItem('registration_data');
-    sessionStorage.removeItem('login_phone');
-    sessionStorage.removeItem('auth_flow');
-    sessionStorage.removeItem('development_otp');
   };
 
   const completeAuth = async (otpCode: string) => {
@@ -129,11 +136,9 @@ export default function OTPVerification() {
         utils.billing.getBillHistory.invalidate(),
       ]);
 
+      verificationCompleteRef.current = true;
       clearAuthSessionStorage();
-      setSuccessMessage(
-        result.message ?? 'Account verified successfully. Redirecting to your dashboard…'
-      );
-      setOtp(['', '', '', '', '', '']);
+      navigateAfterAuth();
     } catch (err) {
       if (shouldUseDevFallback(err)) {
         const name = registrationData?.name ?? 'KASHDA User';
@@ -145,8 +150,10 @@ export default function OTPVerification() {
           accountReference: registrationData?.accountReference,
         });
         setDevUser(devUser);
+        verificationCompleteRef.current = true;
         clearAuthSessionStorage();
         setSuccessMessage('Account verified (dev mode). Redirecting…');
+        navigateAfterAuth();
         return;
       }
       throw err;
