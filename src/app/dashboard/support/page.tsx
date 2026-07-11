@@ -1,38 +1,39 @@
-'use client';
+"use client";
 
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Grid';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Button from '@mui/material/Button';
-import Link from 'next/link';
-import QuizIcon from '@mui/icons-material/Quiz';
-import MailOutlinedIcon from '@mui/icons-material/MailOutlined';
-import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
-import ChatOutlinedIcon from '@mui/icons-material/ChatOutlined';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader';
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Grid from "@mui/material/Grid";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Button from "@mui/material/Button";
+import Link from "next/link";
+import QuizIcon from "@mui/icons-material/Quiz";
+import MailOutlinedIcon from "@mui/icons-material/MailOutlined";
+import ReportProblemOutlinedIcon from "@mui/icons-material/ReportProblemOutlined";
+import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 
 const supportCards = [
   {
-    title: 'FAQs',
-    description: 'Find answers to common questions about property tax payments.',
+    title: "FAQs",
+    description:
+      "Find answers to common questions about property rate payments.",
     icon: QuizIcon,
   },
   {
-    title: 'Contact Us',
-    description: 'Email support@kashda.com — Mon–Fri, 8am–5pm (GMT).',
+    title: "Contact Us",
+    description: "Email support@kashda.com — Mon–Fri, 8am–5pm (GMT).",
     icon: MailOutlinedIcon,
   },
   {
-    title: 'Report an Issue',
-    description: 'Let us know if something isn\'t working as expected.',
+    title: "Report an Issue",
+    description: "Let us know if something isn't working as expected.",
     icon: ReportProblemOutlinedIcon,
   },
   {
-    title: 'Live Chat',
-    description: 'Chat with our support team (coming soon).',
+    title: "Live Chat",
+    description: "Chat with our support team (coming soon).",
     icon: ChatOutlinedIcon,
     disabled: true,
   },
@@ -43,7 +44,7 @@ export default function SupportPage() {
     <DashboardLayout activeTab="support">
       <DashboardPageHeader
         title="Support"
-        description="We're here to help with your property tax payments"
+        description="We're here to help with your property rate payments"
       />
 
       <Grid container spacing={2} sx={{ maxWidth: 800, mb: 4 }}>
@@ -51,28 +52,45 @@ export default function SupportPage() {
           const Icon = item.icon;
           return (
             <Grid key={item.title} size={{ xs: 12, sm: 6 }}>
-              <Card sx={{ height: '100%', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-2px)' } }}>
+              <Card
+                sx={{
+                  height: "100%",
+                  transition: "transform 0.2s",
+                  "&:hover": { transform: "translateY(-2px)" },
+                }}
+              >
                 <CardContent>
                   <Box
                     sx={{
                       width: 48,
                       height: 48,
                       borderRadius: 2,
-                      bgcolor: 'primary.dark',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'secondary.main',
+                      bgcolor: "primary.dark",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "secondary.main",
                       mb: 2,
                     }}
                   >
                     <Icon />
                   </Box>
-                  <Typography variant="h6" gutterBottom>{item.title}</Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  <Typography variant="h6" gutterBottom>
+                    {item.title}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
                     {item.description}
                   </Typography>
-                  <Button variant="outlined" color="secondary" size="small" disabled={item.disabled}>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    size="small"
+                    disabled={item.disabled}
+                  >
                     Learn More
                   </Button>
                 </CardContent>
@@ -87,10 +105,22 @@ export default function SupportPage() {
           <Typography variant="h6" color="secondary.main" gutterBottom>
             Frequently Asked Questions
           </Typography>
-          <Box component="ul" sx={{ pl: 2, color: 'text.primary', '& li': { mb: 1.5 } }}>
-            <li><strong>When are bills generated?</strong> — On the 1st of each month.</li>
-            <li><strong>How do I pay?</strong> — Use Pay Now with MTN, Vodafone, or AirtelTigo mobile money.</li>
-            <li><strong>Account reference?</strong> — Find it in the sidebar for manual payments.</li>
+          <Box
+            component="ul"
+            sx={{ pl: 2, color: "text.primary", "& li": { mb: 1.5 } }}
+          >
+            <li>
+              <strong>When are bills generated?</strong> — On the 1st of each
+              month.
+            </li>
+            <li>
+              <strong>How do I pay?</strong> — Use Pay Now with MTN, Vodafone,
+              or AirtelTigo mobile money.
+            </li>
+            <li>
+              <strong>Account reference?</strong> — Find it in the sidebar for
+              manual payments.
+            </li>
           </Box>
         </CardContent>
       </Card>

@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import FacebookIcon from '@mui/icons-material/Facebook';
-import TwitterIcon from '@mui/icons-material/Twitter';
-import LinkedInIcon from '@mui/icons-material/LinkedIn';
-import InstagramIcon from '@mui/icons-material/Instagram';
-import KashdaLogo from '@/components/common/KashdaLogo';
-import { footerLinks } from '@/content/landingContent';
+import Link from "next/link";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container";
+import IconButton from "@mui/material/IconButton";
+import Typography from "@mui/material/Typography";
+import FacebookIcon from "@mui/icons-material/Facebook";
+import TwitterIcon from "@mui/icons-material/Twitter";
+import LinkedInIcon from "@mui/icons-material/LinkedIn";
+import InstagramIcon from "@mui/icons-material/Instagram";
+import KashdaLogo from "@/components/common/KashdaLogo";
+import { footerLinks } from "@/content/landingContent";
 
 const socialLinks = [
-  { icon: FacebookIcon, label: 'Facebook' },
-  { icon: TwitterIcon, label: 'Twitter' },
-  { icon: LinkedInIcon, label: 'LinkedIn' },
-  { icon: InstagramIcon, label: 'Instagram' },
+  { icon: FacebookIcon, label: "Facebook" },
+  { icon: TwitterIcon, label: "Twitter" },
+  { icon: LinkedInIcon, label: "LinkedIn" },
+  { icon: InstagramIcon, label: "Instagram" },
 ] as const;
 
 export default function MarketingFooter() {
@@ -24,26 +24,29 @@ export default function MarketingFooter() {
     <Box
       component="footer"
       sx={{
-        bgcolor: 'background.paper',
+        bgcolor: "background.paper",
         borderTop: 1,
-        borderColor: 'divider',
+        borderColor: "divider",
         py: 6,
-        mt: 'auto',
+        mt: "auto",
       }}
     >
       <Container maxWidth="lg">
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
           <KashdaLogo />
         </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 3 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 1, mb: 3 }}>
           {socialLinks.map(({ icon: Icon, label }) => (
             <IconButton
               key={label}
               component="a"
               href="#"
               aria-label={label}
-              sx={{ color: 'text.secondary', '&:hover': { color: 'secondary.main' } }}
+              sx={{
+                color: "text.secondary",
+                "&:hover": { color: "secondary.main" },
+              }}
             >
               <Icon />
             </IconButton>
@@ -53,11 +56,11 @@ export default function MarketingFooter() {
         <Box
           component="ul"
           sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
             gap: { xs: 2, md: 4 },
-            listStyle: 'none',
+            listStyle: "none",
             m: 0,
             p: 0,
             mb: 3,
@@ -70,9 +73,9 @@ export default function MarketingFooter() {
                 href={link.href}
                 variant="body2"
                 sx={{
-                  color: 'text.primary',
-                  textDecoration: 'none',
-                  '&:hover': { color: 'secondary.main' },
+                  color: "text.primary",
+                  textDecoration: "none",
+                  "&:hover": { color: "secondary.main" },
                 }}
               >
                 {link.label}
@@ -81,8 +84,13 @@ export default function MarketingFooter() {
           ))}
         </Box>
 
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-          &copy; {new Date().getFullYear()} KASHDA. Property tax revenue collection in Ghana.
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ textAlign: "center" }}
+        >
+          &copy; {new Date().getFullYear()} KASHDA. Property rate revenue
+          collection in Ghana.
         </Typography>
       </Container>
     </Box>
