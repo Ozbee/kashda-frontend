@@ -34,7 +34,3 @@ export function isDevAuthEnabled(): boolean {
   if (process.env.NODE_ENV === 'production') return false;
   return false;
 }
-
-export function getAppName(): string {
-  return process.env.NEXT_PUBLIC_APP_NAME ?? 'KASHDA';
-}

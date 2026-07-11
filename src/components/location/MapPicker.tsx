@@ -46,6 +46,7 @@ export default function MapPicker({ initial, onPick }: MapPickerProps) {
 
   useEffect(() => {
     let cancelled = false;
+    let invalidateTimer: ReturnType<typeof setTimeout> | undefined;
 
     (async () => {
       const L = (await import('leaflet')).default;
@@ -90,11 +91,14 @@ export default function MapPicker({ initial, onPick }: MapPickerProps) {
       });
 
       // The container may not have its final size on first paint.
-      setTimeout(() => map.invalidateSize(), 120);
+      invalidateTimer = setTimeout(() => {
+        if (!cancelled) map.invalidateSize();
+      }, 120);
     })();
 
     return () => {
       cancelled = true;
+      if (invalidateTimer !== undefined) clearTimeout(invalidateTimer);
       mapRef.current?.remove();
       mapRef.current = null;
       markerRef.current = null;

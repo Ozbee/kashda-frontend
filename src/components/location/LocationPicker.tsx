@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -10,8 +11,27 @@ import CircularProgress from '@mui/material/CircularProgress';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import MapIcon from '@mui/icons-material/Map';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import MapPicker, { type LatLng } from './MapPicker';
+import type { LatLng } from './MapPicker';
 import type { LocationSource } from '@/types/api';
+
+const MapPicker = dynamic(() => import('./MapPicker'), {
+  ssr: false,
+  loading: () => (
+    <Box
+      sx={{
+        height: 300,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1,
+      }}
+    >
+      <CircularProgress size={28} color="secondary" />
+    </Box>
+  ),
+});
 
 export interface SelectedLocation {
   latitude: number;
@@ -31,12 +51,20 @@ function formatCoords(loc: SelectedLocation): string {
 }
 
 export default function LocationPicker({ value, onChange }: LocationPickerProps) {
+  const mountedRef = useRef(true);
   const [mode, setMode] = useState<Mode>('choose');
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');
   const [pendingManual, setPendingManual] = useState<LatLng | null>(
     value?.source === 'manual' ? { latitude: value.latitude, longitude: value.longitude } : null
   );
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const detectGps = () => {
     setGpsError('');
@@ -47,6 +75,7 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
     setGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        if (!mountedRef.current) return;
         setGpsLoading(false);
         onChange({
           latitude: pos.coords.latitude,
@@ -56,6 +85,7 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
         setMode('choose');
       },
       (err) => {
+        if (!mountedRef.current) return;
         setGpsLoading(false);
         if (err.code === err.PERMISSION_DENIED) {
           setGpsError(

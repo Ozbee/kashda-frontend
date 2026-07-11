@@ -1,7 +1,6 @@
-export const dynamic = 'force-dynamic';
-
 import AuthGuard from '@/components/common/AuthGuard';
 import LocationGate from '@/components/location/LocationGate';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export default function DashboardRootLayout({
   children,
@@ -9,8 +8,10 @@ export default function DashboardRootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthGuard>
-      <LocationGate>{children}</LocationGate>
-    </AuthGuard>
+    <AuthProvider>
+      <AuthGuard>
+        <LocationGate>{children}</LocationGate>
+      </AuthGuard>
+    </AuthProvider>
   );
 }
