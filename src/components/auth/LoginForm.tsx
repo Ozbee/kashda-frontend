@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -15,13 +15,22 @@ import KashdaLogo from "@/components/common/KashdaLogo";
 import AuthShell from "@/components/auth/AuthShell";
 import { isDevAuthEnabled } from "@/lib/env";
 import { trpc } from "@/lib/trpc";
+import { storeAuthFlow, storeAuthRedirect } from "@/lib/auth-session";
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const requestOtpMutation = trpc.auth.requestOtp.useMutation();
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const redirect = searchParams.get("redirect");
+    if (redirect) {
+      storeAuthRedirect(redirect);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +62,7 @@ export default function LoginForm() {
       }
       sessionStorage.removeItem("registration_data");
       sessionStorage.setItem("login_phone", normalized);
-      sessionStorage.setItem("auth_flow", "login");
+      storeAuthFlow("login");
       router.push("/verify-otp");
     } catch (err) {
       setError(

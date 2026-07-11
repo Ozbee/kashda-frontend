@@ -9,6 +9,7 @@
     }
   },
   "env": {
+    "NEXT_PUBLIC_BACKEND_URL": "/api/trpc",
     "NEXT_PUBLIC_DEV_AUTH": "false",
     "ENABLE_EXPERIMENTAL_COREPACK": "1"
   }

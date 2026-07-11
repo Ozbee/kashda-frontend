@@ -17,6 +17,8 @@ export type User = KashdaUser;
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  /** True once we know whether a session exists (avoids premature /login redirects). */
+  authChecked: boolean;
   isAuthenticated: boolean;
   refetchUser: () => void;
   logout: () => Promise<void>;
@@ -75,6 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     enabled: useApi && devHydrated,
     retry: 1,
     refetchOnWindowFocus: false,
+    placeholderData: (previous) => previous,
   });
 
   const logoutMutation = trpc.auth.logout.useMutation();
@@ -90,6 +93,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const user =
     isDevAuthEnabled() && devUser ? devUser : sessionUser ?? apiUser ?? null;
 
+  const authChecked =
+    devHydrated &&
+    (!useApi || !!sessionUser || !!devUser || meQuery.isFetched);
+
+  const isLoading =
+    !devHydrated || (useApi && !user && (meQuery.isLoading || meQuery.isFetching));
+
   const logout = useCallback(async () => {
     setSessionUser(null);
     setDevUser(null);
@@ -103,20 +113,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     utils.auth.me.invalidate();
   }, [setDevUser, logoutMutation, utils.auth.me]);
 
-  const isLoading =
-    !devHydrated || (useApi && meQuery.isLoading && !sessionUser && !apiUser);
-
   const value = useMemo<AuthContextType>(
     () => ({
       user,
       isLoading,
+      authChecked,
       isAuthenticated: !!user,
       refetchUser: () => void meQuery.refetch(),
       logout,
       setDevUser,
       applyVerifiedUser,
     }),
-    [user, isLoading, meQuery.refetch, logout, setDevUser, applyVerifiedUser]
+    [
+      user,
+      isLoading,
+      authChecked,
+      meQuery.refetch,
+      logout,
+      setDevUser,
+      applyVerifiedUser,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

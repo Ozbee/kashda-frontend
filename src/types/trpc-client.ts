@@ -3,10 +3,17 @@
 type QueryHook<T> = {
   useQuery: (
     input?: unknown,
-    opts?: { enabled?: boolean; retry?: boolean | number; refetchOnWindowFocus?: boolean }
+    opts?: {
+      enabled?: boolean;
+      retry?: boolean | number;
+      refetchOnWindowFocus?: boolean;
+      placeholderData?: (previous: T | undefined) => T | undefined;
+    }
   ) => {
     data: T | undefined;
     isLoading: boolean;
+    isFetching: boolean;
+    isFetched: boolean;
     isError: boolean;
     error: unknown;
     refetch: () => Promise<unknown>;

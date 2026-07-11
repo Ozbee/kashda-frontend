@@ -35,8 +35,8 @@
    Edit `.env.local` with your values:
 
    ```env
-   NEXT_PUBLIC_API_URL=http://localhost:3000
-   NEXT_PUBLIC_BACKEND_URL=http://localhost:3000/api/trpc
+   NEXT_PUBLIC_BACKEND_URL=/api/trpc
+   BACKEND_ORIGIN=http://127.0.0.1:3000
    NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_your_key
    ```
 
@@ -191,7 +191,7 @@ export const trpc = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url:
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000/api/trpc",
+        process.env.NEXT_PUBLIC_BACKEND_URL || "/api/trpc",
     }),
   ],
 });
@@ -283,8 +283,8 @@ const { data: bills } = trpc.billing.getBillHistory.useQuery(
    ```
 
 3. **Set environment variables in Vercel dashboard**
-   - `NEXT_PUBLIC_API_URL`
-   - `NEXT_PUBLIC_BACKEND_URL`
+   - `NEXT_PUBLIC_BACKEND_URL=/api/trpc`
+   - `BACKEND_ORIGIN=https://kashda-api.onrender.com` (your Render service URL)
    - `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`
 
 ### Self-Hosted (Docker)
@@ -319,16 +319,16 @@ docker run -p 3000:3000 kashda-frontend
 **Production (.env.production)**:
 
 ```env
-NEXT_PUBLIC_API_URL=https://api.kashda.com
-NEXT_PUBLIC_BACKEND_URL=https://api.kashda.com/api/trpc
+NEXT_PUBLIC_BACKEND_URL=/api/trpc
+BACKEND_ORIGIN=https://kashda-api.onrender.com
 NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_your_production_key
 ```
 
 **Staging (.env.staging)**:
 
 ```env
-NEXT_PUBLIC_API_URL=https://staging-api.kashda.com
-NEXT_PUBLIC_BACKEND_URL=https://staging-api.kashda.com/api/trpc
+NEXT_PUBLIC_BACKEND_URL=/api/trpc
+BACKEND_ORIGIN=https://staging-api.kashda.com
 NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_staging_key
 ```
 
@@ -336,9 +336,10 @@ NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_test_staging_key
 
 ### Backend Connection Issues
 
-- Verify backend is running: `curl http://localhost:3000/api/trpc`
-- Check `NEXT_PUBLIC_BACKEND_URL` in `.env.local`
-- Ensure CORS is enabled on backend
+- Verify backend is running: `curl http://127.0.0.1:3000/api/health`
+- Check `NEXT_PUBLIC_BACKEND_URL=/api/trpc` and `BACKEND_ORIGIN` in `.env.local`
+- Do not use an absolute Render URL for `NEXT_PUBLIC_BACKEND_URL` — session cookies must stay first-party
+- Ensure CORS is enabled on backend (`ALLOWED_ORIGINS` includes your frontend URL)
 
 ### Paystack Integration
 
