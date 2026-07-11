@@ -68,9 +68,10 @@ export interface TrpcReact {
         /** Legacy prod API — sent alongside GPS fields for backward compatibility. */
         addressType?: 'ghana_post' | 'gps';
         addressValue?: string;
-        propertyCategoryId: number;
+        propertyCategoryCode?: 'residential_low' | 'residential_high' | 'commercial';
+        propertyCategoryId?: number;
       },
-      { success: boolean; phoneNumber: string; accountReference?: string }
+      { success: boolean; phoneNumber: string; accountReference?: string; developmentOtp?: string }
     >;
     requestOtp: MutationHook<
       { phoneNumber: string },
