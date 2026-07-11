@@ -1,12 +1,30 @@
-﻿export function getBackendUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_BACKEND_URL;
-  if (configured?.startsWith('/')) {
-    if (typeof window !== 'undefined') {
-      return `${window.location.origin}${configured}`;
-    }
-    return `http://localhost:3001${configured}`;
+﻿/**
+ * Resolve the tRPC endpoint the browser talks to.
+ *
+ * By default we use the SAME-ORIGIN path `/api/trpc`, which Next.js rewrites to
+ * the backend (see `next.config.ts`). Keeping requests first-party is what makes
+ * the session cookie set during OTP verification persist to the follow-up
+ * `auth.me` call — a cross-origin absolute URL causes the browser to treat the
+ * session cookie as third-party and drop it, producing the
+ * "account was verified but the session could not be saved" error.
+ *
+ * Set `NEXT_PUBLIC_BACKEND_URL` to an absolute `http(s)://` URL only if you
+ * intentionally want to bypass the proxy (cross-origin cookies must then be
+ * supported end-to-end).
+ */
+export function getBackendUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
+  const target = configured && configured.length > 0 ? configured : '/api/trpc';
+
+  if (/^https?:\/\//i.test(target)) {
+    return target;
   }
-  return configured ?? 'http://localhost:3000/api/trpc';
+
+  const path = target.startsWith('/') ? target : `/${target}`;
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}${path}`;
+  }
+  return `http://localhost:3001${path}`;
 }
 
 export function isDevAuthEnabled(): boolean {
