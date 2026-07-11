@@ -34,7 +34,14 @@ import type {
   BillHistoryItem,
   UserProfile,
   MomoNetwork,
+  LocationSource,
 } from './api';
+
+export interface LocationInput {
+  latitude: number;
+  longitude: number;
+  locationSource: LocationSource;
+}
 
 export interface TrpcReact {
   useUtils: () => {
@@ -55,8 +62,9 @@ export interface TrpcReact {
         name: string;
         phoneNumber: string;
         email?: string;
-        addressType: string;
-        addressValue: string;
+        latitude: number;
+        longitude: number;
+        locationSource: LocationSource;
         propertyCategoryId: number;
       },
       { success: boolean; phoneNumber: string; accountReference?: string }
@@ -74,6 +82,10 @@ export interface TrpcReact {
     updateProfile: MutationHook<
       { name?: string; email?: string },
       { success: boolean; message?: string }
+    >;
+    updateLocation: MutationHook<
+      LocationInput,
+      { success: boolean; user?: KashdaUser; message?: string }
     >;
   };
   billing: {
