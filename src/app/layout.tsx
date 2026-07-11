@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Providers } from '@/app/providers';
-import { AuthProvider } from '@/contexts/AuthContext';
 import './globals.css';
 
 const geistSans = Geist({
@@ -44,9 +43,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className="min-h-full flex flex-col bg-kashda-bg text-kashda-text">
-        <Providers>
-          <AuthProvider>{children}</AuthProvider>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

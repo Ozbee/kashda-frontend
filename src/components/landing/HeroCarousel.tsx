@@ -52,7 +52,15 @@ export default function HeroCarousel() {
     >
       <Box ref={emblaRef} sx={{ overflow: 'hidden', height: '100%' }}>
         <Box sx={{ display: 'flex', height: '100%' }}>
-          {slides.map((slide, index) => (
+          {slides.map((slide, index) => {
+            const isActive = index === selectedIndex;
+            const isAdjacent =
+              slides.length > 1 &&
+              (index === (selectedIndex + 1) % slides.length ||
+                index === (selectedIndex - 1 + slides.length) % slides.length);
+            const shouldLoadImage = isActive || isAdjacent;
+
+            return (
             <Box
               key={slide.headline}
               sx={{
@@ -62,14 +70,19 @@ export default function HeroCarousel() {
                 minHeight: { xs: '60vh', md: '70vh' },
               }}
             >
-              <Image
-                src={slide.image}
-                alt=""
-                fill
-                priority={index === 0}
-                sizes="100vw"
-                style={{ objectFit: 'cover' }}
-              />
+              {shouldLoadImage ? (
+                <Image
+                  src={slide.image}
+                  alt=""
+                  fill
+                  priority={index === 0}
+                  loading={index === 0 ? undefined : 'lazy'}
+                  sizes="100vw"
+                  style={{ objectFit: 'cover' }}
+                />
+              ) : (
+                <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'primary.dark' }} />
+              )}
               <Box
                 sx={{
                   position: 'absolute',
@@ -136,7 +149,8 @@ export default function HeroCarousel() {
                 </Button>
               </Container>
             </Box>
-          ))}
+            );
+          })}
         </Box>
       </Box>
 

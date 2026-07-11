@@ -41,9 +41,9 @@ export function TrpcProvider({
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Provider = (trpcReact as any).Provider as ComponentType<{
-    children: ReactNode;
+    children?: ReactNode;
     client: TrpcClient;
     queryClient: QueryClient;
   }>;
-  return createElement(Provider, { client, queryClient, children });
+  return createElement(Provider, { client, queryClient }, children);
 }

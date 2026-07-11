@@ -36,7 +36,7 @@ export default function DashboardPage() {
   });
 
   const paymentsQuery = trpc.billing.getPaymentHistory.useQuery(
-    { limit: 20 },
+    { limit: 50 },
     { retry: false }
   );
 

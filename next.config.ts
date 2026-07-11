@@ -1,4 +1,27 @@
 import type { NextConfig } from "next";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Pin Turbopack to this app directory. Without this, Next.js can infer a parent
+// workspace root when sibling lockfiles exist (e.g. kashda-backend nearby),
+// causing Turbopack to watch/resolve a much larger tree and leak memory in dev.
+const appRoot = path.dirname(fileURLToPath(import.meta.url));
+
+const isDev = process.env.NODE_ENV !== "production";
+
+// connect-src: same-origin always; localhost/backend dev origins only in dev.
+const connectSrc = [
+  "'self'",
+  "https://api.paystack.co",
+  "https://*.onrender.com",
+  "https://*.vercel.app",
+  "https://nominatim.openstreetmap.org",
+  "https://*.tile.openstreetmap.org",
+  ...(isDev ? ["http://localhost:3000", "ws://localhost:3001"] : []),
+];
+
+// Next.js dev tooling (HMR/react-refresh) needs 'unsafe-eval'; production does not.
+const scriptSrc = ["'self'", "'unsafe-inline'", ...(isDev ? ["'unsafe-eval'"] : [])];
 
 const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
@@ -11,11 +34,14 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      `script-src ${scriptSrc.join(" ")}`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://api.paystack.co https://*.onrender.com https://*.vercel.app http://localhost:3000 https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org",
+      `connect-src ${connectSrc.join(" ")}`,
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
       "frame-ancestors 'self'",
     ].join("; "),
   },
@@ -34,6 +60,14 @@ const backendOrigin = (
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  turbopack: {
+    root: appRoot,
+  },
+  experimental: {
+    // Known to cause runaway dev memory in Next.js 16.2.x when left enabled.
+    turbopackServerFastRefresh: false,
+    optimizePackageImports: ["@mui/material", "@mui/icons-material"],
+  },
   async rewrites() {
     return [
       {

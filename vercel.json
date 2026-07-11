@@ -3,6 +3,11 @@
   "framework": "nextjs",
   "buildCommand": "pnpm run build",
   "installCommand": "corepack enable && pnpm install --frozen-lockfile",
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=4096"
+    }
+  },
   "env": {
     "NEXT_PUBLIC_DEV_AUTH": "false",
     "ENABLE_EXPERIMENTAL_COREPACK": "1"
