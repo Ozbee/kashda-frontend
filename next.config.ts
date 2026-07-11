@@ -21,13 +21,24 @@ const securityHeaders = [
   },
 ];
 
+// Origin of the backend the `/api/*` proxy forwards to. Requests are proxied so
+// the browser talks to the frontend origin only, keeping the session cookie
+// first-party (see src/lib/env.ts). In production set BACKEND_ORIGIN to the
+// deployed backend URL (e.g. https://kashda-backend.onrender.com); locally it
+// defaults to the dev backend on port 3000.
+const backendOrigin = (
+  process.env.BACKEND_ORIGIN ??
+  process.env.BACKEND_URL ??
+  "http://127.0.0.1:3000"
+).replace(/\/+$/, "");
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: "http://127.0.0.1:3000/api/:path*",
+        destination: `${backendOrigin}/api/:path*`,
       },
     ];
   },
