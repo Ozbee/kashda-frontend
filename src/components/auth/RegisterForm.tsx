@@ -86,6 +86,11 @@ export default function RegisterForm() {
         // Legacy prod API fields — kept for backends that still validate addressType/addressValue.
         addressType: "gps",
         addressValue,
+        propertyCategoryCode: formData.propertyCategory as
+          | "residential_low"
+          | "residential_high"
+          | "commercial",
+        // Legacy numeric IDs — kept for backends not yet accepting propertyCategoryCode.
         propertyCategoryId:
           PROPERTY_CATEGORY_IDS[formData.propertyCategory] ?? 1,
       });
