@@ -1,4 +1,5 @@
 export type UserRole = "user" | "admin" | "field_agent";
+export type LocationSource = "gps" | "manual";
 export interface KashdaUser {
   id: number;
   openId: string;
@@ -8,6 +9,10 @@ export interface KashdaUser {
   role: UserRole;
   accountReference?: string;
   isVerified?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
+  locationSource?: LocationSource | null;
+  hasLocation?: boolean;
 }
 export interface TaxBill {
   id: number;

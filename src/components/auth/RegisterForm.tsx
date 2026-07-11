@@ -14,14 +14,13 @@ import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import KashdaLogo from '@/components/common/KashdaLogo';
 import AuthShell from '@/components/auth/AuthShell';
+import LocationPicker, { type SelectedLocation } from '@/components/location/LocationPicker';
 import { trpc } from '@/lib/trpc';
 import { PROPERTY_CATEGORY_IDS } from '@/types/api';
 interface RegisterFormData {
   name: string;
   phone: string;
   email: string;
-  addressType: 'ghana_post' | 'gps' | 'manual';
-  addressValue: string;
   propertyCategory: string;
 }
 
@@ -32,10 +31,9 @@ export default function RegisterForm() {
     name: '',
     phone: '',
     email: '',
-    addressType: 'manual',
-    addressValue: '',
     propertyCategory: 'residential_low',
   });
+  const [location, setLocation] = useState<SelectedLocation | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -56,12 +54,12 @@ export default function RegisterForm() {
       setError('Phone number is required');
       return false;
     }
-    if (!formData.addressValue.trim()) {
-      setError('Address is required');
-      return false;
-    }
     if (!/^\+?[0-9]{10,15}$/.test(formData.phone.replace(/\s/g, ''))) {
       setError('Please enter a valid phone number');
+      return false;
+    }
+    if (!location) {
+      setError('Please provide your property location to continue.');
       return false;
     }
     return true;
@@ -71,17 +69,17 @@ export default function RegisterForm() {
     e.preventDefault();
     if (!validateForm()) return;
 
+    if (!location) return;
+
     setLoading(true);
     try {
-      const addressType =
-        formData.addressType === 'manual' ? 'ghana_post' : formData.addressType;
-
       const result = await registerMutation.mutateAsync({
         name: formData.name,
         phoneNumber: formData.phone.replace(/\s/g, ''),
         email: formData.email || undefined,
-        addressType,
-        addressValue: formData.addressValue,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        locationSource: location.source,
         propertyCategoryId:
           PROPERTY_CATEGORY_IDS[formData.propertyCategory] ?? 1,
       });
@@ -157,26 +155,7 @@ export default function RegisterForm() {
                   onChange={handleChange}
                   fullWidth
                 />
-                <TextField
-                  select
-                  label="Address Type"
-                  name="addressType"
-                  value={formData.addressType}
-                  onChange={handleChange}
-                  fullWidth
-                >
-                  <MenuItem value="manual">Manual Address</MenuItem>
-                  <MenuItem value="ghana_post">Ghana Post Address</MenuItem>
-                  <MenuItem value="gps">GPS Coordinates</MenuItem>
-                </TextField>
-                <TextField
-                  label="Property Address"
-                  name="addressValue"
-                  value={formData.addressValue}
-                  onChange={handleChange}
-                  required
-                  fullWidth
-                />
+                <LocationPicker value={location} onChange={setLocation} />
                 <TextField
                   select
                   label="Property Category"

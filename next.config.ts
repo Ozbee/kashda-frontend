@@ -6,7 +6,7 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
   {
     key: "Content-Security-Policy",
     value: [
@@ -15,7 +15,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://api.paystack.co https://*.onrender.com https://*.vercel.app http://localhost:3000",
+      "connect-src 'self' https://api.paystack.co https://*.onrender.com https://*.vercel.app http://localhost:3000 https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org",
       "frame-ancestors 'self'",
     ].join("; "),
   },
