@@ -1,30 +1,39 @@
-import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
-import { Providers } from '@/app/providers';
-import './globals.css';
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import { Providers } from "@/app/providers";
+import "./globals.css";
 
 const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: 'KASHDA - Property Tax Revenue Collection',
-  description: 'Manage your property tax payments easily with KASHDA. Pay via MTN, Telecel, or AT Mobile Money in Ghana.',
+  title: "KASHDA - Property Rate Revenue Collection",
+  description:
+    "Manage your property rate payments easily with KASHDA. Pay via MTN, Telecel, or AT Mobile Money in Ghana.",
   icons: {
-    icon: '/kashda_logo.svg',
-    apple: '/kashda_logo.svg',
+    icon: "/kashda_logo.svg",
+    apple: "/kashda_logo.svg",
   },
   openGraph: {
-    title: 'KASHDA - Simplify Revenue Collection in Ghana',
-    description: 'Manage your property taxes with ease. Secure, fast, and reliable mobile money payments.',
-    images: [{ url: '/assets/landing/hero-city.jpg', width: 1920, height: 1080, alt: 'KASHDA' }],
-    type: 'website',
+    title: "KASHDA - Simplify Revenue Collection in Ghana",
+    description:
+      "Manage your property rate with ease. Secure, fast, and reliable mobile money payments.",
+    images: [
+      {
+        url: "/assets/landing/hero-city.jpg",
+        width: 1920,
+        height: 1080,
+        alt: "KASHDA",
+      },
+    ],
+    type: "website",
   },
 };
 

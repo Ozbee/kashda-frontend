@@ -65,6 +65,9 @@ export interface TrpcReact {
         latitude: number;
         longitude: number;
         locationSource: LocationSource;
+        /** Legacy prod API — sent alongside GPS fields for backward compatibility. */
+        addressType?: 'ghana_post' | 'gps';
+        addressValue?: string;
         propertyCategoryId: number;
       },
       { success: boolean; phoneNumber: string; accountReference?: string }

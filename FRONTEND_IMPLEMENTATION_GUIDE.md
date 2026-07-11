@@ -2,11 +2,12 @@
 
 ## Project Overview
 
-This is the Next.js frontend for KASHDA V1, a multi-country fintech property tax revenue collection platform. The V1 release focuses on Ghana with property tax management, user onboarding, billing, and mobile money payments.
+This is the Next.js frontend for KASHDA V1, a multi-country fintech property rate revenue collection platform. The V1 release focuses on Ghana with property rate management, user onboarding, billing, and mobile money payments.
 
 ## Design System
 
 ### Brand Colors
+
 - **Primary Purple**: `#6a0dad` - Main brand color, used for primary buttons, links, and accents
 - **Gold Accent**: `#d4af37` - Premium accent, used for highlights and special elements
 - **Light Background**: `#ffffff` - Light mode background
@@ -15,11 +16,13 @@ This is the Next.js frontend for KASHDA V1, a multi-country fintech property tax
 - **Dark Text**: `#ededed` - Dark mode text
 
 ### Logo
+
 - Location: `/public/kashda_logo.png`
 - Dimensions: 750x205px
 - Format: PNG with transparency
 
 ### Typography
+
 - Font Family: Geist Sans (default Next.js font)
 - Font Mono: Geist Mono (for code/technical content)
 
@@ -183,9 +186,9 @@ Update `src/styles/globals.css`:
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
 }
 
 /* KASHDA Brand Styles */
@@ -205,6 +208,7 @@ body {
 ## Feature Implementation Checklist
 
 ### Phase 1: Authentication & Onboarding
+
 - [ ] Landing page with KASHDA branding
 - [ ] Login page with email/phone input
 - [ ] Registration form (name, phone, email, address, property category)
@@ -213,6 +217,7 @@ body {
 - [ ] SMS OTP delivery integration
 
 ### Phase 2: User Dashboard
+
 - [ ] Dashboard layout with sidebar navigation
 - [ ] Current bill display (base amount + arrears)
 - [ ] Payment history table
@@ -221,6 +226,7 @@ body {
 - [ ] Logout functionality
 
 ### Phase 3: Payment Flow
+
 - [ ] Payment initiation modal
 - [ ] Mobile money provider selection (MTN, Vodafone, AirtelTigo)
 - [ ] Payment amount confirmation
@@ -229,6 +235,7 @@ body {
 - [ ] Payment success/failure notifications
 
 ### Phase 4: Admin Panel
+
 - [ ] Admin dashboard with analytics
 - [ ] User management (list, view, edit, delete)
 - [ ] Bill management (view, generate, edit)
@@ -237,6 +244,7 @@ body {
 - [ ] Notifications log viewer
 
 ### Phase 5: Field Agent Portal
+
 - [ ] Field agent dashboard
 - [ ] User registration on behalf
 - [ ] User list management
@@ -244,6 +252,7 @@ body {
 - [ ] Collection statistics
 
 ### Phase 6: Feature Toggles
+
 - [ ] Fetch feature toggles from backend
 - [ ] Conditional rendering based on toggles
 - [ ] "Coming Soon" states for disabled features
@@ -262,7 +271,8 @@ import type { AppRouter } from "@kashda-backend/server/routers";
 export const trpc = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000/api/trpc",
+      url:
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000/api/trpc",
     }),
   ],
 });
@@ -271,26 +281,31 @@ export const trpc = createTRPCClient<AppRouter>({
 ### Key API Endpoints to Integrate
 
 **Authentication**:
+
 - `auth.register` - User registration
 - `auth.verifyOtp` - OTP verification
 - `auth.me` - Get current user
 - `auth.logout` - Logout
 
 **Billing**:
+
 - `billing.getCurrentBill` - Get current month's bill
 - `billing.getBillHistory` - Get bill history
 - `billing.getBillDetails` - Get detailed bill info
 
 **Payments**:
+
 - `payment.initiateMobileMoneyPayment` - Start payment
 - `payment.verifyPaymentStatus` - Check payment status
 
 **Admin**:
+
 - `admin.getUsers` - List users
 - `admin.getBillingStats` - Get statistics
 - `admin.updateCountry` - Update country settings
 
 **Feature Toggles**:
+
 - `featureToggle.getCountryToggles` - Get toggles for country
 
 ## Authentication Flow
@@ -397,6 +412,7 @@ npm run cypress
 ## Support
 
 For issues or questions:
+
 - Backend API: http://localhost:3000
 - Backend Documentation: `/home/ubuntu/kashda-backend/API_QUICK_REFERENCE.md`
 - Backend Setup: `/home/ubuntu/kashda-backend/BACKEND_SETUP_GUIDE.md`
