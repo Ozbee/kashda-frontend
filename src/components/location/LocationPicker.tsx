@@ -8,9 +8,17 @@ import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import IconButton from '@mui/material/IconButton';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import MapIcon from '@mui/icons-material/Map';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CloseIcon from '@mui/icons-material/Close';
 import type { LatLng } from './MapPicker';
 import type { LocationSource } from '@/types/api';
 
@@ -19,7 +27,8 @@ const MapPicker = dynamic(() => import('./MapPicker'), {
   loading: () => (
     <Box
       sx={{
-        height: 300,
+        flex: 1,
+        minHeight: 200,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -44,15 +53,16 @@ interface LocationPickerProps {
   onChange: (location: SelectedLocation) => void;
 }
 
-type Mode = 'choose' | 'manual';
-
 function formatCoords(loc: SelectedLocation): string {
   return `${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)}`;
 }
 
 export default function LocationPicker({ value, onChange }: LocationPickerProps) {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const mountedRef = useRef(true);
-  const [mode, setMode] = useState<Mode>('choose');
+  const [manualOpen, setManualOpen] = useState(false);
+  const [mapMounted, setMapMounted] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState('');
   const [pendingManual, setPendingManual] = useState<LatLng | null>(
@@ -65,6 +75,23 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
       mountedRef.current = false;
     };
   }, []);
+
+  const closeManualPicker = () => {
+    setManualOpen(false);
+    setMapMounted(false);
+  };
+
+  const openManualPicker = () => {
+    setGpsError('');
+    setManualOpen(true);
+  };
+
+  const confirmManualLocation = () => {
+    if (pendingManual) {
+      onChange({ ...pendingManual, source: 'manual' });
+      closeManualPicker();
+    }
+  };
 
   const detectGps = () => {
     setGpsError('');
@@ -82,7 +109,7 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
           longitude: pos.coords.longitude,
           source: 'gps',
         });
-        setMode('choose');
+        closeManualPicker();
       },
       (err) => {
         if (!mountedRef.current) return;
@@ -127,7 +154,6 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
           size="small"
           sx={{ mt: 1 }}
           onClick={() => {
-            setMode('choose');
             setGpsError('');
             onChange(null as unknown as SelectedLocation);
           }}
@@ -139,67 +165,127 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
   }
 
   return (
-    <Box
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 1,
-        p: 2,
-      }}
-    >
-      <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Property Location</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Choose how you want to provide your property location.
-      </Typography>
+    <>
+      <Box
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1,
+          p: 2,
+        }}
+      >
+        <Typography sx={{ fontWeight: 600, mb: 0.5 }}>Property Location</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Choose how you want to provide your property location.
+        </Typography>
 
-      <Stack spacing={2}>
-        {gpsError && <Alert severity="error">{gpsError}</Alert>}
+        <Stack spacing={2}>
+          {gpsError && <Alert severity="error">{gpsError}</Alert>}
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button
-            variant={mode === 'choose' ? 'contained' : 'outlined'}
-            startIcon={gpsLoading ? <CircularProgress size={18} color="inherit" /> : <MyLocationIcon />}
-            onClick={detectGps}
-            disabled={gpsLoading}
-            fullWidth
-          >
-            {gpsLoading ? 'Detecting…' : 'Detect Automatically (GPS)'}
-          </Button>
-          <Button
-            variant={mode === 'manual' ? 'contained' : 'outlined'}
-            color="secondary"
-            startIcon={<MapIcon />}
-            onClick={() => {
-              setGpsError('');
-              setMode('manual');
-            }}
-            fullWidth
-          >
-            Select Manually (Map)
-          </Button>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+            <Button
+              variant={!manualOpen ? 'contained' : 'outlined'}
+              startIcon={gpsLoading ? <CircularProgress size={18} color="inherit" /> : <MyLocationIcon />}
+              onClick={detectGps}
+              disabled={gpsLoading}
+              fullWidth
+            >
+              {gpsLoading ? 'Detecting…' : 'Detect Automatically (GPS)'}
+            </Button>
+            <Button
+              variant={manualOpen ? 'contained' : 'outlined'}
+              color="secondary"
+              startIcon={<MapIcon />}
+              onClick={openManualPicker}
+              fullWidth
+            >
+              Select Manually (Map)
+            </Button>
+          </Stack>
         </Stack>
+      </Box>
 
-        {mode === 'manual' && (
-          <Stack spacing={1.5}>
+      <Dialog
+        open={manualOpen}
+        onClose={closeManualPicker}
+        fullScreen={isSmallScreen}
+        fullWidth
+        maxWidth="md"
+        aria-labelledby="manual-location-dialog-title"
+        sx={
+          isSmallScreen
+            ? undefined
+            : {
+                '& .MuiDialog-paper': {
+                  height: 'min(90vh, 720px)',
+                  maxHeight: '90vh',
+                },
+              }
+        }
+        slotProps={{
+          transition: {
+            onEntered: () => setMapMounted(true),
+          },
+        }}
+      >
+        <DialogTitle
+          id="manual-location-dialog-title"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 1,
+            pr: 1,
+          }}
+        >
+          <Typography component="span" variant="h6" sx={{ fontWeight: 600 }}>
+            Select location on map
+          </Typography>
+          <IconButton
+            aria-label="Close map picker"
+            onClick={closeManualPicker}
+            edge="end"
+            size="small"
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent
+          dividers
+          sx={{
+            p: { xs: 1.5, sm: 2 },
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {mapMounted && (
             <MapPicker
               initial={pendingManual}
               onPick={(pos) => setPendingManual(pos)}
+              mapHeight="100%"
+              fillContainer
             />
-            <Button
-              variant="contained"
-              disabled={!pendingManual}
-              onClick={() => {
-                if (pendingManual) {
-                  onChange({ ...pendingManual, source: 'manual' });
-                  setMode('choose');
-                }
-              }}
-            >
-              Confirm this location
-            </Button>
-          </Stack>
-        )}
-      </Stack>
-    </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ px: { xs: 2, sm: 3 }, py: 2, gap: 1, flexWrap: 'wrap' }}>
+          <Button onClick={closeManualPicker} color="inherit">
+            Use automatic (GPS)
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            disabled={!pendingManual}
+            onClick={confirmManualLocation}
+          >
+            Confirm this location
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }

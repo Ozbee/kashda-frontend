@@ -21,6 +21,10 @@ export interface LatLng {
 interface MapPickerProps {
   initial?: LatLng | null;
   onPick: (pos: LatLng) => void;
+  /** Map viewport height. Use `"100%"` with `fillContainer` inside a flex parent. */
+  mapHeight?: number | string;
+  /** Stretch the map to fill remaining vertical space in a flex layout. */
+  fillContainer?: boolean;
 }
 
 /**
@@ -28,7 +32,12 @@ interface MapPickerProps {
  * Users can search a place, pan/zoom, click the map or drag the pin, and the
  * current pin coordinates are reported back to the parent via `onPick`.
  */
-export default function MapPicker({ initial, onPick }: MapPickerProps) {
+export default function MapPicker({
+  initial,
+  onPick,
+  mapHeight = 300,
+  fillContainer = false,
+}: MapPickerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletNS.Map | null>(null);
   const markerRef = useRef<LeafletNS.Marker | null>(null);
@@ -137,7 +146,10 @@ export default function MapPicker({ initial, onPick }: MapPickerProps) {
   };
 
   return (
-    <Stack spacing={1.5}>
+    <Stack
+      spacing={1.5}
+      sx={fillContainer ? { flex: 1, minHeight: 0, height: '100%' } : undefined}
+    >
       <Stack direction="row" spacing={1}>
         <TextField
           size="small"
@@ -166,17 +178,19 @@ export default function MapPicker({ initial, onPick }: MapPickerProps) {
       <Box
         ref={containerRef}
         sx={{
-          height: 300,
           width: '100%',
           borderRadius: 1,
           overflow: 'hidden',
           border: '1px solid',
           borderColor: 'divider',
+          ...(fillContainer
+            ? { flex: 1, minHeight: 200, height: mapHeight }
+            : { height: mapHeight }),
         }}
       />
 
       <Typography variant="caption" color="text.secondary">
-        Tap the map or drag the pin to mark your property, then confirm below.
+        Tap the map or drag the pin to mark your property, then confirm your selection.
       </Typography>
     </Stack>
   );
