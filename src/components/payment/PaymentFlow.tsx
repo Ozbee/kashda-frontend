@@ -37,13 +37,24 @@ function validateMomoNumber(value: string): string | null {
   return null;
 }
 
+function toLocalPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('233') && digits.length === 12) {
+    return `0${digits.slice(3)}`;
+  }
+  if (digits.length === 9 && !digits.startsWith('0')) {
+    return `0${digits}`;
+  }
+  return phone;
+}
+
 export default function PaymentFlow({ billId, defaultPhone = '' }: PaymentFlowProps) {
   const router = useRouter();
   const billQuery = trpc.billing.getBillDetails.useQuery({ billId });
   const initiateMutation = trpc.payment.initiateMobileMoneyPayment.useMutation();
   const [step, setStep] = useState<'method' | 'details' | 'status'>('method');
   const [network, setNetwork] = useState<MomoNetwork>('MTN');
-  const [momoNumber, setMomoNumber] = useState(defaultPhone);
+  const [momoNumber, setMomoNumber] = useState(() => toLocalPhone(defaultPhone));
   const [payAmount, setPayAmount] = useState('');
   const [reference, setReference] = useState('');
   const [error, setError] = useState('');
@@ -176,6 +187,9 @@ export default function PaymentFlow({ billId, defaultPhone = '' }: PaymentFlowPr
               <Typography variant="h6" color="secondary.main" sx={{ fontWeight: 600 }}>
                 Mobile Wallet Payment
               </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                Mobile wallet payment is currently supported only in Ghana.
+              </Typography>
               {error && <Alert severity="error">{error}</Alert>}
 
               <TextField
@@ -199,7 +213,7 @@ export default function PaymentFlow({ billId, defaultPhone = '' }: PaymentFlowPr
                 slotProps={{
                   htmlInput: { maxLength: 10, inputMode: 'numeric' },
                 }}
-                helperText="10 digits starting with 0"
+                helperText="Enter number (10 digits)"
               />
 
               <TextField
