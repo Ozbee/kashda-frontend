@@ -14,6 +14,9 @@ import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { trpc } from '@/lib/trpc';
 import { formatGhs, toNumber } from '@/lib/format';
 import type { MomoNetwork } from '@/types/api';
@@ -21,16 +24,17 @@ import { MOMO_NETWORKS } from '@/types/api';
 import { isDevAuthEnabled } from '@/lib/env';
 import PaymentStepIndicator from '@/components/payment/PaymentStepIndicator';
 
-const NETWORK_COLORS: Record<string, string> = {
-  MTN: '#FFCC00',
-  Vodafone: '#E60000',
-  AirtelTigo: '#0066CC',
-  Telecel: '#E60000',
-};
-
 interface PaymentFlowProps {
   billId: number;
   defaultPhone?: string;
+}
+
+function validateMomoNumber(value: string): string | null {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return 'Enter your mobile money number';
+  if (!digits.startsWith('0')) return 'Number must start with 0';
+  if (digits.length !== 10) return 'Enter a 10-digit phone number';
+  return null;
 }
 
 export default function PaymentFlow({ billId, defaultPhone = '' }: PaymentFlowProps) {
@@ -40,6 +44,7 @@ export default function PaymentFlow({ billId, defaultPhone = '' }: PaymentFlowPr
   const [step, setStep] = useState<'method' | 'details' | 'status'>('method');
   const [network, setNetwork] = useState<MomoNetwork>('MTN');
   const [momoNumber, setMomoNumber] = useState(defaultPhone);
+  const [payAmount, setPayAmount] = useState('');
   const [reference, setReference] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,10 +53,28 @@ export default function PaymentFlow({ billId, defaultPhone = '' }: PaymentFlowPr
   const bill = billQuery.data;
   const amount = bill ? toNumber(bill.totalDue) : 0;
 
+  const handleMomoNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setMomoNumber(raw);
+  };
+
+  const handleGoToDetails = () => {
+    setPayAmount(String(amount));
+    setStep('details');
+  };
+
   const handleInitiate = async () => {
     setError('');
-    if (!momoNumber.trim()) {
-      setError('Enter your mobile money number');
+
+    const phoneError = validateMomoNumber(momoNumber);
+    if (phoneError) {
+      setError(phoneError);
+      return;
+    }
+
+    const parsed = parseFloat(payAmount);
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      setError('Enter a valid amount to pay');
       return;
     }
 
@@ -90,6 +113,7 @@ export default function PaymentFlow({ billId, defaultPhone = '' }: PaymentFlowPr
     <Box sx={{ maxWidth: 520, mx: 'auto' }}>
       <PaymentStepIndicator currentStep={step} />
 
+      {/* Step 1: Select Payment Method */}
       {bill && step === 'method' && (
         <Card sx={{ transition: 'box-shadow 0.2s', '&:hover': { boxShadow: 4 } }}>
           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
@@ -98,50 +122,59 @@ export default function PaymentFlow({ billId, defaultPhone = '' }: PaymentFlowPr
                 Select Payment Method
               </Typography>
               <Typography color="text.secondary">Amount due: {formatGhs(amount)}</Typography>
+
               <Button
                 variant="contained"
                 color="secondary"
                 fullWidth
                 startIcon={<PhoneAndroidIcon />}
-                onClick={() => setStep('details')}
+                onClick={handleGoToDetails}
                 sx={{ py: 1.5 }}
               >
-                Mobile Money (MoMo)
+                Mobile Wallet
               </Button>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
-                {MOMO_NETWORKS.map((n) => (
-                  <Box
-                    key={n}
-                    sx={{
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 1,
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      bgcolor: 'background.default',
-                      border: 1,
-                      borderColor: NETWORK_COLORS[n] ?? 'divider',
-                      color: 'text.primary',
-                    }}
-                  >
-                    {n}
-                  </Box>
-                ))}
-              </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-                Card & bank transfer — Coming soon
-              </Typography>
+
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<DescriptionIcon />}
+                disabled
+                sx={{ py: 1.5 }}
+              >
+                Bank Cheque
+              </Button>
+
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<AccountBalanceIcon />}
+                disabled
+                sx={{ py: 1.5 }}
+              >
+                Bank Transfer
+              </Button>
+
+              <Button
+                variant="outlined"
+                fullWidth
+                startIcon={<CreditCardIcon />}
+                disabled
+                sx={{ py: 1.5 }}
+              >
+                Pay with Card
+              </Button>
             </Stack>
           </CardContent>
         </Card>
       )}
 
+      {/* Step 2: Mobile Wallet Details */}
       {step === 'details' && (
         <Card sx={{ transition: 'box-shadow 0.2s', '&:hover': { boxShadow: 4 } }}>
           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
             <Stack spacing={2}>
               <Typography variant="h6" color="secondary.main" sx={{ fontWeight: 600 }}>
-                Mobile Money Payment
+                Mobile Wallet Payment
               </Typography>
               {error && <Alert severity="error">{error}</Alert>}
 
@@ -158,15 +191,36 @@ export default function PaymentFlow({ billId, defaultPhone = '' }: PaymentFlowPr
               </TextField>
 
               <TextField
-                label="MoMo Number"
+                label="Mobile Wallet Number"
                 value={momoNumber}
-                onChange={(e) => setMomoNumber(e.target.value)}
-                placeholder="+233..."
+                onChange={handleMomoNumberChange}
+                placeholder="0241234567"
                 fullWidth
+                slotProps={{
+                  htmlInput: { maxLength: 10, inputMode: 'numeric' },
+                }}
+                helperText="10 digits starting with 0"
               />
 
-              <Button variant="contained" color="secondary" fullWidth disabled={loading} onClick={handleInitiate}>
-                {loading ? 'Processing...' : `Pay ${formatGhs(amount)}`}
+              <TextField
+                label="Amount to Pay (GH₵)"
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                type="number"
+                fullWidth
+                slotProps={{
+                  htmlInput: { min: 0.01, step: 0.01 },
+                }}
+              />
+
+              <Button
+                variant="contained"
+                color="secondary"
+                fullWidth
+                disabled={loading}
+                onClick={handleInitiate}
+              >
+                {loading ? 'Processing...' : 'Pay'}
               </Button>
               <Button variant="outlined" color="secondary" fullWidth onClick={() => setStep('method')}>
                 Back
@@ -176,6 +230,7 @@ export default function PaymentFlow({ billId, defaultPhone = '' }: PaymentFlowPr
         </Card>
       )}
 
+      {/* Step 3: Confirmation */}
       {step === 'status' && (
         <Card>
           <CardContent sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center' }}>
