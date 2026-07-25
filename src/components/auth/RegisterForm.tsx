@@ -17,9 +17,14 @@ import AuthShell from "@/components/auth/AuthShell";
 import LocationPicker, {
   type SelectedLocation,
 } from "@/components/location/LocationPicker";
+import CountryPhoneInput, {
+  toE164,
+  validateLocalNumber,
+} from "@/components/auth/CountryPhoneInput";
 import { trpc } from "@/lib/trpc";
 import { storeAuthFlow } from "@/lib/auth-session";
 import { PROPERTY_CATEGORY_IDS } from "@/types/api";
+
 interface RegisterFormData {
   name: string;
   phone: string;
@@ -36,6 +41,7 @@ export default function RegisterForm() {
     email: "",
     propertyCategory: "residential_low",
   });
+  const [country, setCountry] = useState("gh");
   const [location, setLocation] = useState<SelectedLocation | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,14 +59,13 @@ export default function RegisterForm() {
       setError("Name is required");
       return false;
     }
-    if (!formData.phone.trim()) {
-      setError("Phone number is required");
+
+    const phoneError = validateLocalNumber(formData.phone);
+    if (phoneError) {
+      setError(phoneError);
       return false;
     }
-    if (!/^\+?[0-9]{10,15}$/.test(formData.phone.replace(/\s/g, ""))) {
-      setError("Please enter a valid phone number");
-      return false;
-    }
+
     if (!location) {
       setError("Please provide your property location to continue.");
       return false;
@@ -74,34 +79,35 @@ export default function RegisterForm() {
 
     if (!location) return;
 
+    const phoneE164 = toE164(country, formData.phone);
+
     setLoading(true);
     try {
       const addressValue = `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
       const result = await registerMutation.mutateAsync({
         name: formData.name,
-        phoneNumber: formData.phone.replace(/\s/g, ""),
+        phoneNumber: phoneE164,
         email: formData.email || undefined,
         latitude: location.latitude,
         longitude: location.longitude,
         locationSource: location.source,
-        // Legacy prod API fields — kept for backends that still validate addressType/addressValue.
         addressType: "gps",
         addressValue,
         propertyCategoryCode: formData.propertyCategory as
           | "residential_low"
           | "residential_high"
           | "commercial",
-        // Legacy numeric IDs — kept for backends not yet accepting propertyCategoryCode.
         propertyCategoryId:
           PROPERTY_CATEGORY_IDS[formData.propertyCategory] ?? 1,
       });
 
-      const phoneE164 = result.phoneNumber ?? formData.phone.replace(/\s/g, "");
+      const resultPhone =
+        result.phoneNumber ?? phoneE164;
       sessionStorage.setItem(
         "registration_data",
         JSON.stringify({
           ...formData,
-          phone: phoneE164,
+          phone: resultPhone,
           accountReference: result.accountReference,
         }),
       );
@@ -113,7 +119,7 @@ export default function RegisterForm() {
       } else {
         sessionStorage.removeItem("development_otp");
       }
-      sessionStorage.setItem("login_phone", phoneE164);
+      sessionStorage.setItem("login_phone", resultPhone);
       storeAuthFlow("register");
       router.push("/verify-otp");
     } catch (err) {
@@ -159,16 +165,18 @@ export default function RegisterForm() {
                 required
                 fullWidth
               />
-              <TextField
-                label="Phone Number"
-                name="phone"
-                type="tel"
+
+              <CountryPhoneInput
                 value={formData.phone}
-                onChange={handleChange}
-                placeholder="+233 24 123 4567"
-                required
-                fullWidth
+                onChange={(val) => {
+                  setFormData((prev) => ({ ...prev, phone: val }));
+                  setError("");
+                }}
+                country={country}
+                onCountryChange={setCountry}
+                error={!!error && error.toLowerCase().includes("phone")}
               />
+
               <TextField
                 label="Email (Optional)"
                 name="email"
