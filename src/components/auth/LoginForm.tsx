@@ -7,12 +7,15 @@ import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
-import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import KashdaLogo from "@/components/common/KashdaLogo";
 import AuthShell from "@/components/auth/AuthShell";
+import CountryPhoneInput, {
+  toE164,
+  validateLocalNumber,
+} from "@/components/auth/CountryPhoneInput";
 import { isDevAuthEnabled } from "@/lib/env";
 import { trpc } from "@/lib/trpc";
 import { storeAuthFlow, storeAuthRedirect } from "@/lib/auth-session";
@@ -22,6 +25,7 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const requestOtpMutation = trpc.auth.requestOtp.useMutation();
   const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState("gh");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -35,21 +39,19 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!phone.trim()) {
-      setError("Phone number is required");
-      return;
-    }
-    if (!/^\+?[0-9]{10,15}$/.test(phone.replace(/\s/g, ""))) {
-      setError("Please enter a valid phone number");
+    const validationError = validateLocalNumber(phone);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
+    const phoneE164 = toE164(country, phone);
+
     setLoading(true);
     try {
-      const normalized = phone.replace(/\s/g, "");
       if (!isDevAuthEnabled()) {
         const result = await requestOtpMutation.mutateAsync({
-          phoneNumber: normalized,
+          phoneNumber: phoneE164,
         });
         if ("developmentOtp" in result && result.developmentOtp) {
           sessionStorage.setItem(
@@ -61,7 +63,7 @@ export default function LoginForm() {
         }
       }
       sessionStorage.removeItem("registration_data");
-      sessionStorage.setItem("login_phone", normalized);
+      sessionStorage.setItem("login_phone", phoneE164);
       storeAuthFlow("login");
       router.push("/verify-otp");
     } catch (err) {
@@ -98,17 +100,15 @@ export default function LoginForm() {
             <Stack spacing={2}>
               {error && <Alert severity="error">{error}</Alert>}
 
-              <TextField
-                label="Phone Number"
-                type="tel"
+              <CountryPhoneInput
                 value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value);
+                onChange={(val) => {
+                  setPhone(val);
                   setError("");
                 }}
-                placeholder="+233 24 123 4567"
-                required
-                fullWidth
+                country={country}
+                onCountryChange={setCountry}
+                error={!!error}
               />
 
               <Button
